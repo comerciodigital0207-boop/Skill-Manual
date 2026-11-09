@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>English Coach</title>
+  <meta name="description" content="Tu coach diario de inglés de A2 a C1: clases, repaso, tareas, speaking y alarmas.">
+  <meta name="theme-color" content="#2f5bea">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">🇬🇧 English Coach</div>
+    <div class="top-right"><span id="streak"></span><button id="settingsBtn" class="icon" aria-label="Ajustes">⚙️</button></div>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <main id="main"></main>
+  <nav id="nav" class="nav" hidden>
+    <button data-view="today"><span>🏠</span>Hoy</button>
+    <button data-view="class"><span>📘</span>Clase</button>
+    <button data-view="review"><span>🔁</span>Repaso</button>
+    <button data-view="homework"><span>📝</span>Tareas</button>
+    <button data-view="speaking"><span>🎤</span>Speaking</button>
+    <button data-view="progress"><span>📈</span>Progreso</button>
+  </nav>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="js/curriculum.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
