@@ -139,13 +139,14 @@
     const id = "err:" + front.slice(0, 60);
     S.cards[id] = { id, en: back, es: front, ex: "", unitId, box: 0, due: today(), mistake: true };
   }
-  const dueCards = () => Object.values(S.cards).filter((c) => c.due <= today());
+  const dueCards = () => Object.values(S.cards).filter((c) => c.due <= today()).sort((a, b) => (a.seen || 0) - (b.seen || 0));
   function gradeCard(card, quality) {
     // quality: 0 otra vez, 1 difícil, 2 bien, 3 fácil
     if (quality === 0) card.box = 0;
     else if (quality === 1) card.box = Math.max(1, card.box);
     else card.box = Math.min(SRS_DAYS.length - 1, card.box + (quality === 3 ? 2 : 1));
     card.due = addDays(today(), quality === 0 ? 0 : SRS_DAYS[card.box] || 1);
+    card.seen = Date.now(); // las falladas vuelven al final de la fila, no de inmediato
     record(card.unitId, "vocab", quality >= 2);
     dayLog().reviews++;
   }
@@ -525,7 +526,7 @@
         const others = shuffle(C.flatMap((x) => x.vocab.map((v) => v[1])).filter((x) => x !== es)).slice(0, 3);
         const o = shuffle([es, ...others]); return { q: `¿Qué significa “${en}”?`, o, a: o.indexOf(es) };
       });
-      const recall = prevUnit && prevUnit.level === u.level ? [prevUnit.quiz[3]] : [];
+      const recall = prevUnit && prevUnit.level === u.level ? [{ ...prevUnit.quiz[3], unitId: prevUnit.id }] : [];
       ctx.testItems = shuffle(u.quiz).concat(vocabQs, recall);
     }
     const hw = S.homework.find((h) => h.unitId === u.id);
