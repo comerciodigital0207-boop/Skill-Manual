@@ -22,6 +22,7 @@
   }
 
   async function ask({ system, messages, effort = "medium", maxTokens = 4000 }) {
+    if (window.AI_BACKEND) return window.AI_BACKEND({ system, messages, effort });
     const s = window.APP_SETTINGS();
     if (!s.apiKey) throw new Error("NO_KEY");
     const client = await getClient(s.apiKey);
@@ -71,7 +72,7 @@ Format with short headings and bullet points (plain markdown, no tables).`;
   }
 
   window.AI = {
-    enabled() { return !!window.APP_SETTINGS().apiKey; },
+    enabled() { return !!window.AI_BACKEND || !!window.APP_SETTINGS().apiKey; },
 
     async reviewWriting({ level, unit, task, text }) {
       const out = await ask({

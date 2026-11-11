@@ -28,12 +28,38 @@
     try {
       const raw = localStorage.getItem(STORE_KEY);
       if (!raw) return defaults();
-      const d = defaults();
-      const parsed = JSON.parse(raw);
-      return { ...d, ...parsed, settings: { ...d.settings, ...(parsed.settings || {}) }, skillStats: { ...d.skillStats, ...(parsed.skillStats || {}) } };
+      return mergeState(JSON.parse(raw));
     } catch (e) { return defaults(); }
   }
-  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* almacenamiento no disponible */ } }
+  function save() {
+    S.updatedAt = Date.now();
+    trimState();
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* almacenamiento no disponible */ }
+    if (window.APP_PERSIST) window.APP_PERSIST(S); // copia en la nube cuando la app corre como Artifact
+  }
+  function trimState() {
+    const keys = Object.keys(S.log).sort();
+    keys.slice(0, Math.max(0, keys.length - 180)).forEach((k) => delete S.log[k]);
+    if (S.mistakes.length > 120) S.mistakes = S.mistakes.slice(0, 120);
+  }
+  function mergeState(parsed) {
+    const d = defaults();
+    return { ...d, ...parsed, settings: { ...d.settings, ...(parsed.settings || {}) }, skillStats: { ...d.skillStats, ...(parsed.skillStats || {}) } };
+  }
+  // Permite restaurar un estado guardado fuera del navegador (más reciente gana)
+  window.APP_HYDRATE = (remote) => {
+    if (!remote || (S.updatedAt || 0) >= (remote.updatedAt || 0)) return false;
+    const key = S.settings.apiKey;
+    S = mergeState(remote); S.settings.apiKey = key || S.settings.apiKey || "";
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* ignorar */ }
+    render(); return true;
+  };
+  window.APP_RERENDER = () => { if (view !== "speaking" || !ctx.recording) render(); };
+  function saveFile(filename, text, type) {
+    if (window.APP_SAVE_FILE) return window.APP_SAVE_FILE(filename, text, type);
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
   window.APP_SETTINGS = () => S.settings;
 
   // ───────────────────────── Utilidades ─────────────────────────
@@ -113,7 +139,7 @@
     };
     rec.onerror = (e) => { if (e.error === "not-allowed") toast("Permite el uso del micrófono para practicar speaking"); };
     rec.onend = () => { if (!stopped) { try { rec.start(); } catch (e) { onEnd && onEnd(finalText.trim()); } } else onEnd && onEnd(finalText.trim()); };
-    rec.start();
+    try { rec.start(); } catch (e) { toast("El micrófono no está disponible aquí. Puedes escribir tu respuesta."); return null; }
     return { stop() { stopped = true; rec.stop(); }, get text() { return finalText.trim(); } };
   }
 
@@ -240,9 +266,7 @@
       ...ev("study", "Clase de inglés (English Coach)", S.settings.studyTime, (S.profile && S.profile.minutes) || 30, "Abre English Coach y haz la clase del día."),
       ...ev("review", "Repaso de inglés 5 min (English Coach)", S.settings.reviewTime, 10, "Repasa tus flashcards en English Coach."),
       "END:VCALENDAR"];
-    const blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "english-coach-alarmas.ics"; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    saveFile("english-coach-alarmas.ics", lines.join("\r\n"), "text/calendar");
   }
 
   // ───────────────────────── Router ─────────────────────────
@@ -504,6 +528,8 @@
       <p class="prompt">🎯 ${esc(prompt)}</p>
       <div class="row"><button class="btn primary" data-action="rec" data-id="${id}">${ctx.recording === id ? "⏹ Terminar" : "🎙 Hablar"}</button>
       <span class="timer" id="timer-${id}">${ctx.recording === id ? "grabando…" : st.secs ? st.secs + " s" : "Meta: 60-120 s"}</span></div>
+      <details class="typed"><summary>¿Sin micrófono? Escribe lo que dirías</summary>
+        <form data-form="typedSpeak" data-id="${id}"><textarea name="t" rows="4" placeholder="Answer in English..."></textarea><button class="btn small">Usar este texto</button></form></details>
       <div class="transcript" id="tr-${id}">${esc(st.text) || '<span class="muted">Tu transcripción aparecerá aquí…</span>'}</div>
       ${st.text && ctx.recording !== id ? `<div class="chips"><span class="chip">${words(st.text).length} palabras</span><span class="chip">${st.secs ? Math.round((words(st.text).length / st.secs) * 60) : 0} palabras/min</span><span class="chip">${new Set(words(st.text)).size} palabras distintas</span></div>
         ${window.AI.enabled() ? `<button class="btn" data-action="aiSpeak" data-id="${id}" data-prompt="${esc(prompt)}">🤖 Feedback del profesor IA</button>` : `<p class="muted">Autoevaluación: ¿usaste la gramática de la unidad? ¿hablaste más de 60 s sin parar? ¿usaste 3+ palabras nuevas? (Activa el profesor IA en Ajustes para feedback detallado.)</p>`}` : ""}
@@ -711,20 +737,23 @@ SCORE: ${score}/10`;
         <label>Velocidad de lectura<input type="range" name="rate" min="0.6" max="1.2" step="0.05" value="${s.rate}"></label>
         <label>Voz<select name="voice"><option value="">Automática</option>${voices.map((v) => `<option ${v.name === s.voice ? "selected" : ""}>${esc(v.name)}</option>`).join("")}</select></label>
         <h2>🤖 Profesor IA (opcional)</h2>
+        ${window.ARTIFACT_MODE ? `<p class="muted">${window.AI.enabled() ? "✅ Activo: el profesor usa tu cuenta de Claude. La primera vez te pedirá permiso." : "No disponible en esta vista. Ábrela con tu cuenta de Claude iniciada."}</p>` : `
         <p class="muted">Con una API key de Claude (console.anthropic.com) obtienes: corrección detallada de tareas, feedback de speaking y conversación por voz. Se guarda solo en este navegador. Tiene costo por uso según tu cuenta de Anthropic.</p>
         <label>API key<input type="password" name="apiKey" value="${esc(s.apiKey)}" placeholder="sk-ant-..." autocomplete="off"></label>
         <label>Modelo<select name="model">
           <option value="claude-opus-5-5" ${s.model === "claude-opus-5-5" ? "selected" : ""}>Claude Opus 5.5 — mejor calidad</option>
           <option value="claude-sonnet-5-5" ${s.model === "claude-sonnet-5-5" ? "selected" : ""}>Claude Sonnet 5.5 — equilibrado</option>
-          <option value="claude-haiku-5-5" ${s.model === "claude-haiku-5-5" ? "selected" : ""}>Claude Haiku 5.5 — más económico</option></select></label>
+          <option value="claude-haiku-5-5" ${s.model === "claude-haiku-5-5" ? "selected" : ""}>Claude Haiku 5.5 — más económico</option></select></label>`}
         <h2>👤 Perfil</h2>
         <label>Nombre<input name="name" value="${esc(S.profile.name)}"></label>
         <label>Meta<select name="goal"><option ${S.profile.goal === "B2" ? "selected" : ""}>B2</option><option ${S.profile.goal === "C1" ? "selected" : ""}>C1</option></select></label>
         <button class="btn primary big">Guardar ajustes</button>
       </form>
-      <section class="card"><h2>💾 Copia de seguridad</h2><p class="muted">Tus datos viven en este dispositivo. Exporta para pasarlos a otro.</p>
+      <section class="card"><h2>💾 Copia de seguridad</h2><p class="muted">${window.ARTIFACT_MODE ? "Tu progreso se guarda en tu cuenta de Claude y en este navegador." : "Tus datos viven en este dispositivo."} Exporta para guardar una copia o pasarla a otro dispositivo.</p>
         <div class="row"><button class="btn" data-action="export">Exportar</button><label class="btn">Importar<input type="file" accept="application/json" data-action="import" hidden></label>
-        <button class="btn bad" data-action="reset">Borrar todo</button></div></section>`;
+        <button class="btn bad" data-action="reset">${ctx.confirmReset ? "Sí, borrar todo" : "Borrar todo"}</button>
+        ${ctx.confirmReset ? '<button class="btn" data-action="cancelReset">Cancelar</button>' : ""}</div>
+        ${ctx.confirmReset ? '<p class="pill bad">Se borrará todo tu progreso y no se puede deshacer.</p>' : ""}</section>`;
   }
 
   // ───────────────────────── Eventos ─────────────────────────
@@ -844,10 +873,12 @@ SCORE: ${score}/10`;
       }
       case "ics": buildICS(); break;
       case "export": {
-        const blob = new Blob([JSON.stringify({ ...S, settings: { ...S.settings, apiKey: "" } }, null, 1)], { type: "application/json" });
-        const l = document.createElement("a"); l.href = URL.createObjectURL(blob); l.download = "english-coach-backup-" + today() + ".json"; l.click(); break;
+        saveFile("english-coach-backup-" + today() + ".json", JSON.stringify({ ...S, settings: { ...S.settings, apiKey: "" } }, null, 1), "application/json"); break;
       }
-      case "reset": if (confirm("¿Borrar todo tu progreso? No se puede deshacer.")) { S = defaults(); save(); go("today"); } break;
+      case "reset":
+        if (!ctx.confirmReset) { ctx.confirmReset = true; rerenderKeepScroll(); break; }
+        S = defaults(); save(); go("today"); toast("Progreso borrado"); break;
+      case "cancelReset": ctx.confirmReset = false; rerenderKeepScroll(); break;
     }
   });
 
@@ -918,12 +949,17 @@ SCORE: ${score}/10`;
       dayLog().minutes += 20; touchStreak(); save();
       out.innerHTML = md(r.text); e.submitter.disabled = false; toast("Tarea revisada ✔"); return;
     }
+    if (kind === "typedSpeak") {
+      const st = ctx.sp[f.dataset.id]; st.text = (fd.get("t") || "").trim(); st.secs = 0; st.feedback = "";
+      if (st.text) { record(ctx.unit ? ctx.unit.id : curUnit().id, "speaking", words(st.text).length >= 40); save(); }
+      rerenderKeepScroll(); return;
+    }
     if (kind === "chat") { const v = fd.get("m"); f.reset(); stopRec(); ctx.recording = null; sendChat(v); return; }
     if (kind === "settings") {
       const s = S.settings;
       s.studyTime = fd.get("studyTime"); s.reviewTime = fd.get("reviewTime");
       s.days = fd.getAll("day").map(Number); s.rate = parseFloat(fd.get("rate")); s.voice = fd.get("voice");
-      s.apiKey = (fd.get("apiKey") || "").trim(); s.model = fd.get("model");
+      if (fd.has("apiKey")) { s.apiKey = (fd.get("apiKey") || "").trim(); s.model = fd.get("model"); }
       S.profile.name = fd.get("name") || S.profile.name; S.profile.goal = fd.get("goal");
       const wantNotify = fd.get("notify") === "on";
       if (wantNotify && "Notification" in window && Notification.permission !== "granted") {
