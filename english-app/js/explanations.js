@@ -1,6 +1,153 @@
-/* Clases explicadas paso a paso (A1): para qué sirve, orden de la frase, por qué,
+/* Clases explicadas paso a paso (A1 y A2): para qué sirve, orden de la frase, por qué,
    diferencias con el español, errores típicos y el porqué de cada ejercicio. */
 window.EXPLAIN = {
+  "a2-1": {
+    purpose: "Diferenciar lo que haces <b>siempre</b> (tu rutina) de lo que estás haciendo <b>ahora mismo</b> o estos días. Es la diferencia más usada al hablar de tu vida.",
+    formulas: [
+      { label: "Hábito (present simple)", parts: ["Sujeto", "verbo (+s con he/she)", "resto + frecuencia"], ex: "I usually work from home.", es: "Yo + normalmente trabajo + desde casa" },
+      { label: "Ahora / temporal (present continuous)", parts: ["Sujeto", "am / is / are", "verbo + ing", "resto"], ex: "I'm working from home this week.", es: "Yo + estoy + trabajando + desde casa esta semana" },
+      { label: "Pregunta continuous", parts: ["Am / Is / Are", "sujeto", "verbo + ing", "?"], ex: "Are you working today?", es: "¿Estás + tú + trabajando + hoy?" }
+    ],
+    table: [["Palabras de hábito → simple", "always, usually, often, sometimes, never, every day"], ["Palabras de ahora → continuous", "now, right now, at the moment, today, this week, Look!, Listen!"], ["Verbos de estado → casi siempre simple", "know, like, love, want, need, understand, believe"]],
+    why: "El inglés separa con dos tiempos lo que en español a veces decimos igual. <b>Simple</b> = una foto de tu vida en general (se repite). <b>Continuous</b> = un video de este momento (está pasando y va a terminar). La pista son las palabras de tiempo: <i>usually</i> te lleva al simple y <i>right now</i> al continuous. Los verbos de estado (know, like, want) describen algo que no es una acción en movimiento, por eso no se ponen en -ing: <i>I know</i>, no “I'm knowing”.",
+    spanish: "En español “trabajo en casa” puede ser hábito o ahora. En inglés debes elegir: <i>I work</i> (hábito) o <i>I'm working</i> (ahora). Español “estoy trabajando” = inglés <i>I'm working</i>, casi igual, pero en inglés se usa más, también para planes temporales (“esta semana”).",
+    mistakes: [["I'm working every day.", "I work every day.", "“Every day” es hábito: present simple."], ["I'm knowing the answer.", "I know the answer.", "“Know” es verbo de estado: no va en -ing."], ["She work now.", "She's working now.", "“Now” pide continuous (is + -ing)."]],
+    qw: [
+      "“Every day” indica hábito → present simple. Con “she” el verbo lleva -s: <b>goes</b> (go + es).",
+      "“Listen!” significa que está pasando en este momento → present continuous: <b>is crying</b>.",
+      "“Know” es un verbo de estado (no es una acción en movimiento), por eso va en simple: <b>I know</b>.",
+      "Es un hábito (usually + weekends) → present simple. La pregunta necesita el ayudante <b>do</b> y el verbo principal también es <b>do</b> (hacer): What do you do?"
+    ]
+  },
+  "a2-2": {
+    purpose: "Contar historias, viajes y cosas que ya pasaron y terminaron: ayer, el año pasado, hace dos semanas.",
+    formulas: [
+      { label: "Afirmativa", parts: ["Sujeto", "verbo en pasado (-ed o irregular)", "resto"], ex: "I visited my grandma.", es: "Yo + visité + a mi abuela" },
+      { label: "Negativa", parts: ["Sujeto", "didn't", "verbo base", "resto"], ex: "I didn't call her.", es: "Yo + no + llamé + a ella" },
+      { label: "Pregunta", parts: ["(Palabra pregunta)", "did", "sujeto", "verbo base", "?"], ex: "Where did you go?", es: "¿Dónde + (did) + tú + fuiste?" },
+      { label: "Hace + tiempo", parts: ["periodo de tiempo", "ago"], ex: "two years ago", es: "hace dos años (¡ago va al final!)" }
+    ],
+    table: [["Regulares", "work → worked, play → played, study → studied"], ["Irregulares muy usados", "go → went, see → saw, buy → bought, meet → met, feel → felt, make → made, take → took, get → got"]],
+    why: "Igual que en A1: <b>did</b> es el ayudante del pasado. Como “did” ya dice “pasado”, el verbo principal vuelve a su forma base: <i>Did you <b>see</b> it?</i> (no “did you saw”). Los irregulares no siguen la regla del -ed porque son verbos muy antiguos y muy usados: hay que memorizarlos, empezando por los 20 más comunes.",
+    spanish: "En inglés el pasado es igual para todas las personas (I went, they went). “Hace dos años” se dice al revés: <b>two years ago</b> (el tiempo primero, ago al final). En español el pasado tiene dos formas (fui / iba); en inglés el past simple cubre “fui” (acción terminada).",
+    mistakes: [["Did you saw the game?", "Did you see the game?", "Después de “did”, verbo base."], ["I goed to the beach.", "I went to the beach.", "“Go” es irregular: went."], ["Ago two years.", "Two years ago.", "“Ago” va después del tiempo."]],
+    qw: [
+      "“Last night” = pasado terminado. “See” es irregular: su pasado es <b>saw</b>.",
+      "Pregunta en pasado → ayudante <b>Did</b>. “Do” sería presente; “was/were” son para to be.",
+      "Después de <b>didn't</b> el verbo va en forma base: <b>catch</b> (no “caught”).",
+      "“Hace tres años” = three years <b>ago</b>. “Ago” siempre va después del periodo."
+    ]
+  },
+  "a2-3": {
+    purpose: "Hablar del futuro según el tipo de futuro: un plan que ya decidiste, una decisión de este momento, una cita organizada o una predicción.",
+    formulas: [
+      { label: "Plan / intención", parts: ["Sujeto", "am / is / are", "going to", "verbo base"], ex: "I'm going to study tonight.", es: "Yo + voy + a + estudiar esta noche" },
+      { label: "Decisión del momento / promesa", parts: ["Sujeto", "will ('ll)", "verbo base"], ex: "I'll help you.", es: "Yo + (will) + te ayudo" },
+      { label: "Cita ya organizada", parts: ["Sujeto", "am / is / are", "verbo + ing", "+ cuándo"], ex: "I'm meeting Ana at 5.", es: "Me veo con Ana a las 5 (ya está acordado)" }
+    ],
+    table: [["¿Ya lo tenías decidido?", "going to"], ["¿Lo decides ahora mismo / prometes / ofreces?", "will"], ["¿Está en tu agenda con hora y persona?", "present continuous"], ["Predicción con evidencia que ves", "going to (Look at those clouds! It's going to rain.)"], ["Predicción por opinión", "will (I think it will rain.)"]],
+    why: "El inglés elige el futuro según <b>cuándo y cómo tomaste la decisión</b>. Si ya lo pensaste antes → <i>going to</i>. Si lo decides al hablar (“¡Ah, yo contesto!”) → <i>will</i>. Si está en el calendario → continuous. Con <i>will</i> el verbo va en base y sin “to”, igual que con <i>can</i>.",
+    spanish: "En español casi todo se dice con “voy a…” o con el futuro (“iré”). Truco: cuando en español dirías “voy a” por un plan, en inglés usa <i>going to</i>. Cuando en español usarías presente para ofrecer (“yo te ayudo”, “yo contesto”), en inglés usa <i>will</i>: <i>I'll help you</i>.",
+    mistakes: [["I will to call you.", "I'll call you.", "Después de “will”, verbo sin “to”."], ["I go to travel next year.", "I'm going to travel next year.", "Falta “am” y “going”."], ["The phone is ringing. I'm going to answer.", "The phone is ringing. I'll answer.", "Decisión del momento → will."]],
+    qw: [
+      "Ves las nubes: es una predicción con <b>evidencia presente</b> → <b>is going to</b>.",
+      "Decides en este momento (el teléfono suena ahora) → <b>'ll</b> (will).",
+      "Es una cita en tu agenda con hora → present continuous: <b>am seeing</b>.",
+      "La estructura es “be + going to”. Con “you” el verbo be es <b>are</b>: What are you going to do?"
+    ]
+  },
+  "a2-4": {
+    purpose: "Comparar cosas: precios, ciudades, trabajos, teléfonos. Decir qué es mejor, peor o el mejor de todos.",
+    formulas: [
+      { label: "Comparativo (adjetivo corto)", parts: ["A", "is", "adjetivo + er", "than", "B"], ex: "My city is bigger than yours.", es: "Mi ciudad + es + más grande + que + la tuya" },
+      { label: "Comparativo (adjetivo largo)", parts: ["A", "is", "more + adjetivo", "than", "B"], ex: "This is more expensive than that.", es: "Esto + es + más caro + que + eso" },
+      { label: "Superlativo", parts: ["the", "adjetivo + est / most + adjetivo"], ex: "the cheapest / the most interesting", es: "el más barato / el más interesante" },
+      { label: "Igualdad", parts: ["as", "adjetivo", "as"], ex: "Tea is as good as coffee.", es: "El té es tan bueno como el café" }
+    ],
+    table: [["1 sílaba", "cheap → cheaper → the cheapest"], ["termina en consonante-vocal-consonante", "big → bigger → the biggest"], ["termina en -y", "easy → easier → the easiest"], ["2+ sílabas", "expensive → more expensive → the most expensive"], ["Irregulares", "good → better → the best · bad → worse → the worst · far → further"]],
+    why: "Las palabras cortas aceptan un final (-er / -est) sin volverse difíciles de pronunciar; las largas no (“expensiver” sería muy largo), por eso usan <i>more / the most</i> delante. <b>Than</b> significa “que” solo en comparaciones. El superlativo siempre lleva <b>the</b> porque señala una sola cosa: la mejor.",
+    spanish: "En español todo se compara con “más”: más grande, más caro. En inglés las palabras cortas cambian: <i>bigger</i> (no “more big”). “Que” en una comparación es <b>than</b> (no “that”). “Tan … como” = <b>as … as</b>.",
+    mistakes: [["more big", "bigger", "Adjetivo corto → -er, sin “more”."], ["She is taller that me.", "She is taller than me.", "En comparaciones “que” = than."], ["It's the more expensive.", "It's the most expensive.", "Superlativo = the most."]],
+    qw: [
+      "“Big” es corto (1 sílaba) → <b>bigger</b>. Doble g porque termina en consonante-vocal-consonante.",
+      "“De mi vida” = el mejor de todos → superlativo de good: <b>the best</b>.",
+      "“Tan … como” en inglés es <b>as … as</b>.",
+      "“Expensive” es largo (3 sílabas) → <b>more</b> expensive than."
+    ]
+  },
+  "a2-5": {
+    purpose: "Comprar, pedir comida y hablar de cantidades: cuánto, cuántos, un poco, algunos, nada.",
+    formulas: [
+      { label: "¿Cuánto? (no se cuenta)", parts: ["How much", "sustantivo incontable", "?"], ex: "How much water do you need?", es: "¿Cuánta agua necesitas?" },
+      { label: "¿Cuántos? (se cuenta)", parts: ["How many", "sustantivo plural", "?"], ex: "How many eggs do we have?", es: "¿Cuántos huevos tenemos?" },
+      { label: "Afirmativa / ofrecer", parts: ["some", "+ sustantivo"], ex: "Would you like some tea?", es: "¿Quieres (algo de) té?" },
+      { label: "Negativa / pregunta", parts: ["any", "+ sustantivo"], ex: "We don't have any milk.", es: "No tenemos nada de leche" }
+    ],
+    table: [["Contables (se pueden contar: 1, 2, 3)", "apple, egg, friend, chair → many, a few"], ["Incontables (no se cuentan sin medida)", "water, money, rice, sugar, information, bread → much, a little"], ["Para medir incontables", "a bottle of water, a cup of coffee, a loaf of bread, a piece of advice"], ["Sirve para ambos", "a lot of / lots of"]],
+    why: "El inglés divide las cosas en <b>contables</b> (puedes decir “two eggs”) e <b>incontables</b> (no dices “two waters” sin medida: dices “two bottles of water”). Por eso hay palabras distintas para cantidad: <i>many</i> para cosas que cuentas y <i>much</i> para cosas que no. <i>Some</i> va en afirmativas y en ofrecimientos (esperas un “sí”); <i>any</i> en negativas y preguntas abiertas.",
+    spanish: "En español “cuánto” sirve para todo (cuánto dinero, cuántas manzanas). En inglés: <b>How much money</b> / <b>How many apples</b>. Ojo: <i>money, information, advice, bread</i> son incontables en inglés, aunque en español los contemos (“dos consejos” = <i>two pieces of advice</i>).",
+    mistakes: [["How many money?", "How much money?", "“Money” es incontable."], ["I don't have some time.", "I don't have any time.", "En negativa se usa “any”."], ["Two breads, please.", "Two loaves of bread, please.", "“Bread” no se cuenta sin medida."]],
+    qw: [
+      "“Sugar” no se cuenta (no dices “two sugars” sin medida) → <b>much</b>.",
+      "Frase negativa (aren't) → <b>any</b>.",
+      "Es un ofrecimiento (Would you like…?), esperas un sí → <b>some</b>, aunque sea pregunta.",
+      "“Friends” se cuenta (plural) → <b>a few</b> (unos pocos). “A little” es para incontables."
+    ]
+  },
+  "a2-6": {
+    purpose: "Hablar de tus experiencias de vida: lugares donde has estado, cosas que has probado o nunca has hecho, sin decir cuándo.",
+    formulas: [
+      { label: "Afirmativa", parts: ["Sujeto", "have / has", "participio", "resto"], ex: "I've been to Mexico.", es: "Yo + he + estado + en México" },
+      { label: "Pregunta", parts: ["Have / Has", "sujeto", "ever", "participio", "?"], ex: "Have you ever tried sushi?", es: "¿Has + tú + alguna vez + probado sushi?" },
+      { label: "Negativa", parts: ["Sujeto", "have / has", "never", "participio"], ex: "I've never flown.", es: "Yo + he + nunca + volado" }
+    ],
+    table: [["¿Dices CUÁNDO pasó? (yesterday, in 2019, last week)", "past simple: I went there in 2019."], ["¿Hablas de tu vida en general, sin fecha?", "present perfect: I've been there."], ["Participios irregulares comunes", "be → been, go → gone/been, see → seen, eat → eaten, do → done, fly → flown, meet → met"]],
+    why: "El present perfect une el pasado con el presente: lo que importa es que <b>en tu vida hasta hoy</b> eso pasó, no la fecha. Por eso, en cuanto dices cuándo (<i>yesterday, in 2019</i>), la acción queda cerrada en el pasado y se usa past simple. Se forma con <b>have</b> como ayudante (aquí “have” no es “tener”, es “haber”) + participio.",
+    spanish: "Se parece al español “he estado, he probado”. La diferencia: en inglés <b>no puedes</b> usarlo con una fecha concreta (“I have seen it yesterday” está mal), aunque en España se diga “lo he visto hoy”. Para lugares visitados se dice <b>been to</b>: <i>I've been to Peru</i> (he estado en Perú).",
+    mistakes: [["I have seen it yesterday.", "I saw it yesterday.", "Con fecha (yesterday) → past simple."], ["Have you ever went?", "Have you ever been / gone?", "Después de have va participio."], ["She have visited Paris.", "She has visited Paris.", "Con she → has."]],
+    qw: [
+      "Después de “have” va el <b>participio</b>. Para lugares visitados se usa <b>been</b> (Have you ever been to…?).",
+      "“Last week” es una fecha terminada → past simple: <b>saw</b>.",
+      "Con “she” el ayudante es <b>has</b>: She has never eaten…",
+      "Present perfect no lleva fecha, pero sí cuántas veces: <b>twice</b> (dos veces). “Yesterday” y “ago” son fechas."
+    ]
+  },
+  "a2-7": {
+    purpose: "Hablar de reglas, obligaciones y dar consejos: lo que debes hacer, lo que no es necesario y lo que está prohibido.",
+    formulas: [
+      { label: "Obligación", parts: ["Sujeto", "must / have to (has to)", "verbo base"], ex: "I have to work on Saturdays.", es: "Tengo que + trabajar los sábados" },
+      { label: "No es necesario", parts: ["Sujeto", "don't / doesn't have to", "verbo base"], ex: "You don't have to come.", es: "No tienes que venir (puedes, pero no es obligatorio)" },
+      { label: "Prohibido", parts: ["Sujeto", "mustn't", "verbo base"], ex: "You mustn't smoke here.", es: "No debes / está prohibido fumar aquí" },
+      { label: "Consejo", parts: ["Sujeto", "should / shouldn't", "verbo base"], ex: "You should rest.", es: "Deberías descansar" }
+    ],
+    why: "<b>Must</b> y <b>should</b> son modales (como can): verbo base directo, sin “to” y sin -s. <b>Have to</b> es un verbo normal, por eso cambia (has to) y usa don't/doesn't. La gran trampa: en negativo significan cosas opuestas. <b>Mustn't</b> = prohibido. <b>Don't have to</b> = no es obligatorio (puedes elegir).",
+    spanish: "“Tener que” = <b>have to</b>. “Deberías” (consejo) = <b>should</b>. Cuidado: “no tienes que venir” es <i>you don't have to come</i> (es opcional), mientras que <i>you mustn't come</i> significa “tienes prohibido venir”.",
+    mistakes: [["You must to wear a helmet.", "You must wear a helmet.", "Después de “must”, sin “to”."], ["She have to work.", "She has to work.", "Con she → has to."], ["You mustn't come if you're tired. (para decir que es opcional)", "You don't have to come if you're tired.", "Mustn't = prohibido."]],
+    qw: [
+      "Está prohibido (forbidden) → <b>mustn't</b>. “Don't have to” significaría que es opcional.",
+      "Es domingo: madrugar no es necesario (es opcional) → <b>don't have to</b>.",
+      "Es un consejo → <b>should</b> + verbo base (sin “to”).",
+      "“Have to” es verbo normal: con “she” se vuelve <b>has to</b>. “Must to” nunca existe."
+    ]
+  },
+  "a2-8": {
+    purpose: "Dar y entender direcciones en la calle, y decir dónde están las cosas.",
+    formulas: [
+      { label: "Dar una indicación (imperativo)", parts: ["Verbo base", "dirección / lugar"], ex: "Turn left at the lights.", es: "Gira + a la izquierda en el semáforo" },
+      { label: "Ubicar algo", parts: ["It's", "preposición", "lugar"], ex: "It's opposite the bank.", es: "Está + enfrente del + banco" },
+      { label: "Preguntar el camino", parts: ["How do I get to", "lugar", "?"], ex: "How do I get to the station?", es: "¿Cómo llego a + la estación?" }
+    ],
+    table: [["at", "un punto concreto: at the bus stop, at the corner"], ["in", "dentro de algo: in the park, in the mall"], ["on", "sobre una superficie / calle: on Main Street, on the left"], ["between A and B", "entre A y B"], ["opposite / next to", "enfrente de / al lado de"], ["along · across · past · through", "a lo largo de · cruzando · pasando por delante · a través de"]],
+    why: "Para dar indicaciones se usa el <b>imperativo</b>: el verbo solo, sin sujeto (<i>Go straight</i>). Es directo pero no grosero en inglés; añade “please” o empieza con “Just…” para sonar amable. Las preposiciones dependen de cómo “ves” el lugar: un punto (<i>at</i>), un espacio cerrado (<i>in</i>), una superficie o línea (<i>on</i>).",
+    spanish: "En español “en” sirve para todo (en la parada, en el parque, en la calle). En inglés se divide en <b>at / in / on</b>. “Llegar a” un lugar en preguntas de dirección es <b>get to</b> (no “arrive to”). “Enfrente de” = <b>opposite</b> (sin “of”).",
+    mistakes: [["How do I arrive to the museum?", "How do I get to the museum?", "Para direcciones se usa “get to”."], ["It's opposite of the bank.", "It's opposite the bank.", "“Opposite” va sin “of”."], ["I'm in the bus stop.", "I'm at the bus stop.", "Un punto concreto → at."]],
+    qw: [
+      "“Entre A y B” = <b>between</b> A and B. “Among” es entre muchas cosas.",
+      "Cruzar de un lado al otro = <b>across</b>. “Along” es ir a lo largo, sin cruzar.",
+      "La parada es un punto de encuentro concreto → <b>at</b> the bus stop.",
+      "Para pedir indicaciones se dice <b>How do I get to…?</b> (cómo llego a…)."
+    ]
+  },
   "a1-1": {
     purpose: "Saludar, decir tu nombre y decir cómo estás. Es lo primero que haces con cualquier persona.",
     formulas: [
