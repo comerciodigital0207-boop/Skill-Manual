@@ -21,6 +21,7 @@
     streak: { count: 0, last: null },
     alarms: { study: null, review: null },
     unitScores: {},
+    explanations: {},
     curriculumVersion: 2
   });
 
@@ -374,6 +375,10 @@
       </div>
     </section>
 
+    ${currentLevel() === "A2" && !Object.keys(S.unitScores).some((k) => k.startsWith("a2")) ? `<section class="card hint">
+      <b>¿Te sientes con muy poca base?</b> Te recomiendo empezar por <b>A1 · Fundamentos</b>: clases paso a paso desde cero, con el porqué de cada cosa.
+      <button class="btn primary" data-action="changeLevel" data-level="A1">Empezar en A1</button></section>` : ""}
+
     ${routineCard(log, due)}
 
     ${prevLog ? `<section class="card">
@@ -467,10 +472,33 @@
       + resourcesBlock(u);
   }
 
+  function explainedLesson(u) {
+    const ex = (window.EXPLAIN || {})[u.id];
+    if (ex) {
+      return `<div class="lesson">
+        <h3>1. ¿Para qué sirve?</h3><p>${ex.purpose}</p>
+        <h3>2. El orden de la frase</h3>
+        ${ex.formulas.map((f) => `<div class="formula"><div class="flabel">${esc(f.label)}</div>
+          <div class="parts">${f.parts.map((p, i) => `${i ? '<span class="plus">+</span>' : ""}<span class="part">${esc(p)}</span>`).join("")}</div>
+          <div class="fex"><button class="icon" data-action="say" data-text="${esc(f.ex)}">🔊</button> <b>${esc(f.ex)}</b> <span class="muted">→ ${esc(f.es)}</span></div></div>`).join("")}
+        ${ex.table ? `<div class="tablewrap"><table>${ex.table.map(([a, b]) => `<tr><td><b>${esc(a)}</b></td><td>${esc(b)}</td></tr>`).join("")}</table></div>` : ""}
+        <h3>3. ¿Por qué es así?</h3><p>${ex.why}</p>
+        <h3>4. Diferencias con el español</h3><p>${ex.spanish}</p>
+        <h3>5. Errores típicos (evítalos)</h3>
+        <div class="mistakes">${ex.mistakes.map(([bad, good, why]) => `<div class="mk"><div class="bad-l">❌ ${esc(bad)}</div><div class="good-l">✅ ${esc(good)}</div><div class="muted">${esc(why)}</div></div>`).join("")}</div>
+        <h3>6. Ejemplos para escuchar y repetir</h3>
+      </div>`;
+    }
+    const cached = S.explanations[u.id];
+    return `<p>${u.grammar.explain}</p>
+      <div class="lesson">${cached ? md(cached) : window.AI.enabled()
+        ? `<button class="btn" data-action="explainUnit" data-unit="${u.id}">🤖 Explícame esta clase paso a paso (orden de la frase, por qué, errores típicos)</button><div id="explain-${u.id}"></div>`
+        : ""}</div>`;
+  }
   function grammarBlock(u) {
     return `<section class="card">
       <h2>📐 ${esc(u.grammar.name)}</h2>
-      <p>${u.grammar.explain}</p>
+      ${explainedLesson(u)}
       <ul class="examples">${u.grammar.examples.map((e) => `<li><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> ${esc(e)}</li>`).join("")}</ul>
       ${u.sound ? `<div class="sound"><b>🗣 Suena como nativo:</b> ${u.sound}</div>` : ""}
       <p class="muted">Escucha cada ejemplo y repítelo en voz alta 3 veces, imitando el ritmo. Así se aprende a hablar, no solo a leer.</p>
@@ -501,7 +529,8 @@
         const ans = st.answers[qi];
         return `<div class="qblock"><div class="q">${qi + 1}. ${esc(q.q)}</div><div class="options">
           ${q.o.map((o, oi) => `<button class="opt ${ans ? (oi === q.a ? "right" : oi === ans.pick ? "wrong" : "") : ""}" ${ans ? "disabled" : ""} data-action="answer" data-quiz="${name}" data-q="${qi}" data-o="${oi}">${esc(o)}</button>`).join("")}
-        </div></div>`;
+        </div>${ans ? `<div class="why ${ans.ok ? "ok" : "no"}"><b>${ans.ok ? "✅ ¡Correcto!" : "❌ La respuesta es: " + esc(q.o[q.a])}</b>
+          ${q.w ? `<div><b>¿Por qué?</b> ${q.w}</div>` : ans.why ? md(ans.why) : window.AI.enabled() ? `<button class="link" data-action="whyAI" data-quiz="${name}" data-q="${qi}">🤖 ¿Por qué? Explícamelo</button>` : ""}</div>` : ""}</div>`;
       }).join("")}
     </section>`;
   }
@@ -785,6 +814,10 @@ SCORE: ${score}/10`;
           <option value="claude-opus-5-5" ${s.model === "claude-opus-5-5" ? "selected" : ""}>Claude Opus 5.5 — mejor calidad</option>
           <option value="claude-sonnet-5-5" ${s.model === "claude-sonnet-5-5" ? "selected" : ""}>Claude Sonnet 5.5 — equilibrado</option>
           <option value="claude-haiku-5-5" ${s.model === "claude-haiku-5-5" ? "selected" : ""}>Claude Haiku 5.5 — más económico</option></select></label>`}
+        <h2>📍 Mi nivel</h2>
+        <p class="muted">Estás en <b>${currentLevel()}</b> · ${esc(curUnit().title)}. Si te parece muy difícil o muy fácil, cambia el punto de inicio (no pierdes tu repaso ni tus tareas).</p>
+        <div class="row"><select id="levelSel">${LEVELS.map((l) => `<option ${l === currentLevel() ? "selected" : ""} value="${l}">${l}${l === "A1" ? " – Fundamentos (desde cero)" : ""}</option>`).join("")}</select>
+        <button type="button" class="btn" data-action="changeLevel">Empezar en este nivel</button></div>
         <h2>👤 Perfil</h2>
         <label>Nombre<input name="name" value="${esc(S.profile.name)}"></label>
         <label>Meta<select name="goal"><option ${S.profile.goal === "B2" ? "selected" : ""}>B2</option><option ${S.profile.goal === "C1" ? "selected" : ""}>C1</option></select></label>
@@ -828,6 +861,40 @@ SCORE: ${score}/10`;
         record(uid, "grammar", ok, ok ? null : { q: q.q, correct: q.o[q.a], pick: q.o[oi] });
         if (!ok) addMistakeCard(uid, q.q.replace("___", "…"), q.q.replace("___", q.o[q.a]));
         save(); rerenderKeepScroll(); break;
+      }
+      case "whyAI": {
+        const st = ctx.quiz[el.dataset.quiz]; const qi = +el.dataset.q; const q = st.items[qi]; const ans = st.answers[qi];
+        el.disabled = true; el.textContent = "Pensando…";
+        try {
+          ans.why = await window.AI.explain({ level: currentLevel(), question: `Ejercicio: "${q.q}". Opciones: ${q.o.join(" | ")}. Respuesta correcta: "${q.o[q.a]}". El estudiante eligió: "${q.o[ans.pick]}".
+Explica en español, muy claro y para principiante, en máximo 5 líneas: por qué la correcta es correcta (la regla y el orden de la frase) y, si se equivocó, por qué su opción no funciona. Da 1 ejemplo extra.` });
+          rerenderKeepScroll();
+        } catch (err) { toast(err.message); el.disabled = false; el.textContent = "🤖 ¿Por qué? Explícamelo"; }
+        break;
+      }
+      case "explainUnit": {
+        const u = C[unitIndex(el.dataset.unit)]; const out = $("#explain-" + u.id);
+        el.disabled = true; out.innerHTML = '<p class="muted">El profesor está preparando tu clase…</p>';
+        try {
+          const txt = await window.AI.explain({ level: u.level, question: `Explica la clase "${u.grammar.name}" a una persona hispanohablante principiante que necesita entender el porqué de todo y el orden de las cosas.
+Base de la clase: ${u.grammar.explain.replace(/<[^>]+>/g, "")}
+Ejemplos: ${u.grammar.examples.join(" | ")}
+Usa exactamente estas secciones:
+## 1. ¿Para qué sirve? (situaciones reales)
+## 2. El orden de la frase (fórmulas tipo: Sujeto + verbo + ...; afirmativa, negativa y pregunta, cada una con 1 ejemplo desglosado palabra por palabra con su traducción)
+## 3. ¿Por qué es así? (la lógica, sin tecnicismos)
+## 4. ¿Cuándo uso esto y cuándo lo otro? (compara con la estructura que más se confunde)
+## 5. Diferencias con el español
+## 6. Errores típicos (❌ incorrecto → ✅ correcto → por qué)
+## 7. Resumen en 3 líneas` });
+          S.explanations[u.id] = txt; save(); rerenderKeepScroll();
+        } catch (err) { out.innerHTML = `<p class="pill bad">${esc(err.message)}</p>`; el.disabled = false; }
+        break;
+      }
+      case "changeLevel": {
+        const lv = el.dataset.level || ($("#levelSel") && $("#levelSel").value);
+        S.progress = { unit: unitIndex(lv.toLowerCase() + "-1"), step: 0 }; save();
+        toast("Listo: ahora empiezas en " + lv + ". Tu repaso y tareas se conservan."); go("class"); break;
       }
       case "pick": case "unpick": {
         const o = ctx.order[+el.dataset.i]; if (o.result) break;
