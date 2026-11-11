@@ -6,6 +6,10 @@
   const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
   const STORE_KEY = "englishCoach.v1";
   const SRS_DAYS = [0, 1, 3, 7, 14, 30, 60, 120];
+  const TEACHER = "Kate";      // profesora nativa (personaje de la app)
+  const PASS = 80;             // % mínimo para aprobar una unidad (dominio antes de avanzar)
+  const DAILY_XP = 60;         // meta diaria de puntos
+  const LOCK_DUE = 10;         // con tantas tarjetas pendientes, primero repaso
 
   // ───────────────────────── Estado ─────────────────────────
   const defaults = () => ({
@@ -129,6 +133,13 @@
     if (v) u.voice = v;
     speechSynthesis.speak(u);
   }
+  function speakEs(text) {
+    if (!window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text); u.lang = "es-ES"; u.rate = 1;
+    const v = speechSynthesis.getVoices().find((x) => /^es[-_]/i.test(x.lang)); if (v) u.voice = v;
+    speechSynthesis.speak(u);
+  }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   function startRecognition({ onText, onEnd }) {
     if (!SR) { toast("Reconocimiento de voz no disponible. Usa Chrome o Edge (en Android/PC) o Safari reciente."); return null; }
@@ -171,6 +182,7 @@
     const id = "err:" + front.slice(0, 60);
     S.cards[id] = { id, en: back, es: front, ex: "", unitId, box: 0, due: today(), mistake: true };
   }
+  const overdueCards = () => Object.values(S.cards).filter((c) => c.due < today()).length;
   const dueCards = () => Object.values(S.cards).filter((c) => c.due <= today()).sort((a, b) => (a.seen || 0) - (b.seen || 0));
   function gradeCard(card, quality) {
     // quality: 0 otra vez, 1 difícil, 2 bien, 3 fácil
@@ -206,10 +218,28 @@
     touchStreak();
     if (step.key === "test") {
       S.unitScores[u.id] = Math.max(S.unitScores[u.id] || 0, score || 0);
-      if ((score || 0) >= 70) { S.progress.unit++; S.progress.step = 0; }
+      if ((score || 0) >= PASS) { S.progress.unit++; S.progress.step = 0; }
       else { S.progress.step = 1; } // volver a practicar antes de repetir el examen
     } else S.progress.step++;
     save();
+  }
+  function dayXP(l) {
+    if (!l) return 0;
+    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15;
+  }
+  function weekStats() {
+    const start = (S.profile && S.profile.created) || today();
+    const days = Array.from({ length: 7 }, (_, i) => addDays(today(), i - 6)).filter((d) => d >= start);
+    const planned = days.filter((d) => S.settings.days.includes(new Date(d + "T12:00:00").getDay())).length || 1;
+    const logs = days.map((d) => S.log[d]).filter(Boolean);
+    const studied = logs.filter((l) => dayXP(l) >= 20).length;
+    const xp = logs.reduce((n, l) => n + dayXP(l), 0);
+    const minutes = logs.reduce((n, l) => n + (l.minutes || 0), 0);
+    const speak = logs.reduce((n, l) => n + (l.speakingWords || 0), 0);
+    const hw = logs.reduce((n, l) => n + (l.hw || 0), 0);
+    const score = Math.round(100 * (0.4 * Math.min(1, studied / planned) + 0.3 * Math.min(1, xp / (DAILY_XP * planned)) + 0.3 * Math.min(1, speak / 300)));
+    const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 55 ? "C" : score >= 35 ? "D" : "F";
+    return { planned, studied, xp, minutes, speak, hw, score, grade };
   }
   function lessonsDone() {
     return Object.values(S.log).reduce((n, d) => n + d.steps.length, 0);
@@ -284,7 +314,7 @@
     const main = $("#main");
     document.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("active", b.dataset.view === view));
     $("#nav").hidden = !S.profile;
-    $("#streak").textContent = S.profile ? "🔥 " + S.streak.count : "";
+    $("#streak").textContent = S.profile ? "🔥 " + S.streak.count + "  ⚡ " + dayXP(S.log[today()]) + "/" + DAILY_XP : "";
     if (!S.profile) { main.innerHTML = viewOnboarding(); return; }
     const views = { today: viewToday, class: viewClass, review: viewReview, homework: viewHomework, speaking: viewSpeaking, progress: viewProgress, settings: viewSettings, unit: viewUnitStudy };
     main.innerHTML = (views[view] || viewToday)();
@@ -361,7 +391,7 @@
     const hello = hour < 12 ? "Good morning" : hour < 19 ? "Good afternoon" : "Good evening";
     const res = window.RESOURCES[currentLevel()];
     const pick = res[new Date().getDate() % res.length];
-    const goalDone = log.steps.length > 0;
+    const goalDone = dayXP(log) >= DAILY_XP;
 
     return `
     <section class="card hero">
@@ -371,9 +401,11 @@
         <span class="chip">Nivel actual: <b>${u.level}</b></span>
         <span class="chip">Meta: <b>${S.profile.goal}</b></span>
         <span class="chip">🔥 Racha: <b>${S.streak.count}</b> días</span>
-        <span class="chip">${goalDone ? "✅ Meta de hoy cumplida" : "🎯 Meta de hoy: 1 clase + repaso"}</span>
+        <span class="chip">${goalDone ? "✅ Meta de hoy cumplida (" + dayXP(log) + " ⚡)" : "🎯 Meta de hoy: " + dayXP(log) + "/" + DAILY_XP + " ⚡"}</span>
       </div>
     </section>
+
+    ${teacherCard()}
 
     ${currentLevel() === "A2" && !Object.keys(S.unitScores).some((k) => k.startsWith("a2")) ? `<section class="card hint">
       <b>¿Te sientes con muy poca base?</b> Te recomiendo empezar por <b>A1 · Fundamentos</b>: clases paso a paso desde cero, con el porqué de cada cosa.
@@ -438,13 +470,17 @@
       <h2>🗓 Tu rutina de hoy (30 min) <span class="pill ${n === 4 ? "good" : ""}">${n}/4</span></h2>
       <div class="routine">${blocks.map((b) => { const tag = b.a ? "a" : "button"; return `<${tag} class="rblock ${b.done ? "done" : ""}" ${b.act}><span class="ri">${b.done ? "✅" : b.icon}</span><span><b>${b.t}</b> <span class="muted">${b.m}</span><br><span class="muted">${b.d}</span></span></${tag}>`; }).join("")}</div>
       <details><summary>¿Por qué este método funciona?</summary>
+        <p class="muted">La app combina los métodos con más evidencia de resultados:</p>
         <ul class="clean">
+          <li><b>Recuerdo activo con voz:</b> en el entrenamiento ves el español y lo dices en inglés antes de ver la respuesta. Obligar al cerebro a producir la frase la fija mucho más que leerla.</li>
+          <li><b>Dominio antes de avanzar:</b> no pasas de unidad sin ${PASS}% en el examen, la tarea entregada y el speaking hecho.</li>
           <li><b>Frases completas, no palabras sueltas:</b> los nativos hablan en bloques (“Can I have…?”, “I'm from…”). Memoriza bloques y podrás armar frases sin traducir.</li>
           <li><b>Escuchar mucho y entender:</b> el oído va primero. 10 minutos diarios de inglés real que casi entiendes valen más que una hora de gramática.</li>
           <li><b>Repetir en voz alta (shadowing):</b> imitar audio de nativos entrena pronunciación, ritmo y confianza al mismo tiempo.</li>
           <li><b>Hablar desde el día 1:</b> equivocarse es parte del método. Primero repites un ejemplo, después lo dices con tu vida.</li>
           <li><b>Repaso espaciado:</b> repasar justo antes de olvidar fija lo aprendido para siempre. Por eso cada día empiezas con lo de ayer.</li>
-          <li><b>Poco pero todos los días:</b> 30 minutos diarios superan a 3 horas un solo día. La racha 🔥 es tu mejor aliada.</li>
+          <li><b>Poco pero todos los días:</b> 30 minutos diarios superan a 3 horas un solo día. La racha 🔥 y la meta de ${DAILY_XP} puntos ⚡ te mantienen constante.</li>
+          <li><b>Feedback inmediato con el porqué:</b> cada error se explica al momento y vuelve a tu repaso hasta que lo domines.</li>
         </ul></details>
     </section>`;
   }
@@ -460,8 +496,48 @@
       <h1>${step.icon} ${esc(u.title)} — ${step.name}</h1>
       <div class="steps">${PLAN.map((p, i) => `<span class="dot ${i < S.progress.step ? "done" : i === S.progress.step ? "now" : ""}">${p.icon}</span>`).join("")}</div>
     </section>`;
+    const due = overdueCards();
+    if (due >= LOCK_DUE) {
+      return head + `<section class="card lock"><div class="teacher-line"><span class="avatar">👩‍🏫</span><div><b>${TEACHER}:</b> “Stop! First, your review.”
+        <div class="muted">Tienes <b>${due}</b> tarjetas atrasadas de días anteriores. Lo que no repasas se olvida: la clase nueva se abre cuando bajes de ${LOCK_DUE}.</div></div></div>
+        <button class="btn primary big" data-action="go" data-view="review">Ir al repaso</button></section>`;
+    }
     const body = { learn: stepLearn, practice: stepPractice, listen: stepListen, speak: stepSpeak, test: stepTest }[step.key](u);
-    return head + body;
+    return head + teacherSays(step.key, u) + body;
+  }
+  function teacherSays(key, u) {
+    const lines = {
+      learn: [`Today we're learning: ${u.title}. Listen to every example and repeat it out loud. Don't just read!`, `Hoy aprendemos “${u.title}”. Escucha cada ejemplo y repítelo en voz alta. ¡No solo lo leas!`],
+      practice: [`Now, practice. When you see Spanish, say it in English out loud before you look at the answer.`, `Ahora practicamos. Cuando veas la frase en español, dila en inglés EN VOZ ALTA antes de ver la respuesta.`],
+      listen: [`Listening time. Copy my rhythm and my sounds. Imitate me like an actor.`, `Hora de escuchar. Copia mi ritmo y mis sonidos. Imítame como si fueras actor o actriz.`],
+      speak: [`Your turn to speak. Mistakes are OK, silence is not. Talk for at least one minute.`, `Te toca hablar. Equivocarse está bien, quedarse en silencio no. Habla al menos un minuto.`],
+      test: [`Test day. You need ${PASS} percent to pass. I know you can do it.`, `Día de examen. Necesitas ${PASS}% para pasar. Sé que puedes.`]
+    }[key];
+    return `<section class="card teacher"><div class="teacher-line"><span class="avatar">👩‍🏫</span>
+      <div><b>${TEACHER}</b> <button class="icon" data-action="say" data-text="${esc(lines[0])}" aria-label="Escuchar">🔊</button>
+      <div class="en">“${esc(lines[0])}”</div><div class="muted">${esc(lines[1])}</div></div></div></section>`;
+  }
+  function teacherCard() {
+    const t = today(); const due = overdueCards();
+    const name = S.profile.name.split(" ")[0];
+    const msgs = [];
+    const yest = addDays(t, -1);
+    const yestPlanned = S.settings.days.includes(new Date(yest + "T12:00:00").getDay());
+    if (yestPlanned && dayXP(S.log[yest]) < 20 && Object.keys(S.log).length > 1) msgs.push(["bad", "Ayer no estudiaste. Hoy no hay excusas: completa la rutina entera y recupera el ritmo."]);
+    if (due >= LOCK_DUE) msgs.push(["bad", `Tienes ${due} tarjetas atrasadas. Tu clase nueva está bloqueada hasta que hagas el repaso.`]);
+    const late = S.homework.filter((h) => h.status === "pending" && h.due < t);
+    if (late.length) msgs.push(["bad", `Tu tarea de “${C[unitIndex(late[0].unitId)].title}” está atrasada. Sin tarea no puedes presentar el examen de la unidad.`]);
+    const weak = weakTopics(1)[0];
+    if (weak) msgs.push(["mid", `Tu punto débil ahora es “${weak.unit.grammar.name}” (${weak.p}% de acierto). Repásalo hoy.`]);
+    const w = weekStats();
+    if (w.speak < 150 && Object.keys(S.log).length > 2) msgs.push(["mid", `Esta semana hablaste solo ${w.speak} palabras. La meta es 300: para hablar, hay que hablar.`]);
+    if (!msgs.length) msgs.push(["good", S.streak.count >= 3 ? `¡${S.streak.count} días seguidos! Así se aprende. Sigue exactamente así.` : "Vamos paso a paso. Haz tu rutina de hoy completa y mañana estarás mejor que hoy."]);
+    const hello = `Hi ${name}! Ready for today's class? Let's go!`;
+    return `<section class="card teacher">
+      <div class="teacher-line"><span class="avatar">👩‍🏫</span><div><b>${TEACHER}, tu profesora</b> <button class="icon" data-action="say" data-text="${esc(hello)}" aria-label="Escuchar">🔊</button>
+      <div class="en">“${esc(hello)}”</div></div></div>
+      <ul class="tmsgs">${msgs.slice(0, 3).map(([k, m]) => `<li class="${k}">${esc(m)}</li>`).join("")}</ul>
+    </section>`;
   }
   function viewUnitStudy() {
     const u = C[unitIndex(ctx.unitId)];
@@ -552,7 +628,7 @@
       const others = C.flatMap((x) => x.vocab.map((v) => v[0]));
       ctx.trans = shuffle(u.vocab).slice(0, 4).map(([en, es]) => ({ es, en, opts: shuffle([en, ...shuffle(others.filter((o) => o !== en)).slice(0, 3)]) }));
     }
-    return quizBlock(u, u.quiz, "practice") + `
+    return drillBlock(u) + quizBlock(u, u.quiz, "practice") + `
       <section class="card"><h2>🧩 Ordena la frase</h2>
       ${ctx.order.map((o, i) => `<div class="qblock"><div class="built">${o.built.map((w, j) => `<button class="chip-btn" data-action="unpick" data-i="${i}" data-j="${j}">${esc(w)}</button>`).join("") || '<span class="muted">Toca las palabras en orden…</span>'}</div>
         <div class="row">${o.pieces.map((w, j) => `<button class="chip-btn ghost" data-action="pick" data-i="${i}" data-j="${j}">${esc(w)}</button>`).join("")}</div>
@@ -565,6 +641,34 @@
       <section class="card"><h2>📝 Tarea asignada</h2><p>${esc(u.writing)}</p><p class="muted">Se guardará en Tareas con fecha de entrega en 2 días. Te la reviso cuando la envíes.</p>
       <button class="btn primary big" data-action="finishStep" data-need="practice">Terminar clase ✔</button></section>`;
   }
+  // Entrenamiento de recuerdo activo con voz: ves español → lo dices en inglés en voz alta → escuchas la respuesta.
+  // Los fallos vuelven más adelante en la misma sesión (repetición graduada) y pasan a tu repaso.
+  function buildDrill(u) {
+    const ex = (window.EXPLAIN || {})[u.id];
+    let items = u.vocab.map(([en, es]) => ({ es, en }));
+    if (ex) items = items.concat(ex.formulas.map((f) => ({ es: f.es.replace(/\s*\+\s*/g, " ").replace(/\(.*?\)/g, "").trim(), en: f.ex })));
+    items = shuffle(items).slice(0, 8);
+    const prev = C[unitIndex(u.id) - 1];
+    if (prev) items = items.concat(shuffle(prev.vocab).slice(0, 2).map(([en, es]) => ({ es, en, old: true })));
+    return { queue: items, i: 0, phase: "prompt", right: 0, wrong: 0, done: false, total: items.length };
+  }
+  function drillBlock(u) {
+    const d = (ctx.drill = ctx.drill || buildDrill(u));
+    if (d.done) return `<section class="card drill"><h2>🎯 Entrenamiento con ${TEACHER} ✅</h2><p>Primera vez correctas: <b>${d.right}</b> · repetidas hasta dominarlas: <b>${d.wrong}</b>. Lo que fallaste quedó en tu repaso.</p></section>`;
+    const it = d.queue[d.i];
+    const left = d.queue.length - d.i;
+    return `<section class="card drill"><h2>🎯 Entrenamiento con ${TEACHER} <span class="pill">${left} por dominar</span></h2>
+      <p class="muted">Método de recuerdo activo: lee la frase en español, <b>dila en inglés en voz alta</b> y solo después mira la respuesta. Las que falles vuelven a salir hasta que las domines.</p>
+      <div class="flash drillcard">
+        <div class="muted">${it.old ? "Repaso de la unidad anterior · " : ""}¿Cómo se dice en inglés?</div>
+        <div class="front">${esc(it.es)} <button class="icon" data-action="sayEs" data-text="${esc(it.es)}" aria-label="Escuchar en español">🔊</button></div>
+        ${d.phase === "reveal" ? `<div class="back"><b>${esc(it.en)}</b> <button class="icon" data-action="say" data-text="${esc(it.en)}">🔊</button></div><div class="muted">Repítela 2 veces imitando el audio.</div>` : `<div class="muted">🗣 Dila en voz alta ahora…</div>`}
+      </div>
+      ${d.phase === "reveal" ? `<div class="grade two"><button class="btn bad" data-action="drillGrade" data-ok="0">❌ Me equivoqué</button><button class="btn good" data-action="drillGrade" data-ok="1">✅ La dije bien</button></div>`
+        : `<button class="btn primary big" data-action="drillReveal">Ya la dije → ver respuesta</button>`}
+    </section>`;
+  }
+
   function stepListen(u) {
     if (!ctx.shadow) {
       ctx.shadow = u.grammar.examples.map((s) => ({ s, said: "", score: null }));
@@ -593,8 +697,8 @@
       <p class="prompt">🎯 ${esc(prompt)}</p>
       <div class="row"><button class="btn primary" data-action="rec" data-id="${id}">${ctx.recording === id ? "⏹ Terminar" : "🎙 Hablar"}</button>
       <span class="timer" id="timer-${id}">${ctx.recording === id ? "grabando…" : st.secs ? st.secs + " s" : "Meta: 60-120 s"}</span></div>
-      <details class="typed"><summary>¿Sin micrófono? Escribe lo que dirías</summary>
-        <form data-form="typedSpeak" data-id="${id}"><textarea name="t" rows="4" placeholder="Answer in English..."></textarea><button class="btn small">Usar este texto</button></form></details>
+      <details class="typed" ${st.typed ? "open" : ""}><summary>¿Sin micrófono? Escribe lo que dirías</summary>
+        <form data-form="typedSpeak" data-id="${id}"><textarea name="t" rows="4" placeholder="Answer in English...">${st.typed ? esc(st.text) : ""}</textarea><button class="btn small">Usar este texto</button></form></details>
       <div class="transcript" id="tr-${id}">${esc(st.text) || '<span class="muted">Tu transcripción aparecerá aquí…</span>'}</div>
       ${st.text && ctx.recording !== id ? `<div class="chips"><span class="chip">${words(st.text).length} palabras</span><span class="chip">${st.secs ? Math.round((words(st.text).length / st.secs) * 60) : 0} palabras/min</span><span class="chip">${new Set(words(st.text)).size} palabras distintas</span></div>
         ${window.AI.enabled() ? `<button class="btn" data-action="aiSpeak" data-id="${id}" data-prompt="${esc(prompt)}">🤖 Feedback del profesor IA</button>` : `<p class="muted">Autoevaluación: ¿usaste la gramática de la unidad? ¿hablaste más de 60 s sin parar? ¿usaste 3+ palabras nuevas? (Activa el profesor IA en Ajustes para feedback detallado.)</p>`}` : ""}
@@ -624,14 +728,16 @@
       ctx.testItems = shuffle(u.quiz).concat(vocabQs, recall);
     }
     const hw = S.homework.find((h) => h.unitId === u.id);
+    const hwPending = hw && hw.status === "pending";
     const done = quizDone("test");
     const score = done ? quizScore("test") : null;
     return quizBlock(u, ctx.testItems, "test") + `
       <section class="card"><h2>📝 Tu tarea de esta unidad</h2>
       ${hw ? (hw.status === "pending" ? `<p class="pill bad">Pendiente</p><p>Envíala antes de cerrar la unidad para recibir corrección.</p><button class="btn" data-action="openHw" data-id="${hw.id}">Hacer tarea ahora</button>` : `<p class="pill good">Entregada${hw.score != null ? " · nota " + hw.score + "/10" : ""}</p>`) : '<p class="muted">Sin tarea registrada.</p>'}
       </section>
-      <section class="card">${done ? `<h2>Resultado: ${score}%</h2><p>${score >= 70 ? "🎉 ¡Unidad aprobada! Pasas a la siguiente." : "Necesitas 70% para avanzar. Volverás a <b>Practica</b> y luego repites el examen. Revisa ‘Dónde repasar’."}</p>` : '<p class="muted">Responde todas las preguntas para ver tu resultado (necesitas 70%).</p>'}
-      <button class="btn primary big" data-action="finishStep" data-need="test" ${done ? "" : "disabled"}>${done && score >= 70 ? "Cerrar unidad 🏁" : "Terminar"}</button></section>`;
+      <section class="card">${done ? `<h2>Resultado: ${score}%</h2><p>${score >= PASS ? "🎉 ¡Unidad aprobada! Pasas a la siguiente." : `Necesitas ${PASS}% para avanzar. ${TEACHER} no te deja pasar con bases flojas: vuelves a <b>Practica</b> y luego repites el examen.`}</p>` : `<p class="muted">Responde todas las preguntas para ver tu resultado (necesitas ${PASS}%).</p>`}
+      ${hwPending ? `<p class="pill bad">Primero entrega tu tarea de esta unidad: sin tarea no se presenta el examen.</p>` : ""}
+      <button class="btn primary big" data-action="finishStep" data-need="test" ${done && !hwPending ? "" : "disabled"}>${done && score >= PASS ? "Cerrar unidad 🏁" : "Terminar"}</button></section>`;
   }
 
   function afterClassRender() { /* hook para futuras animaciones */ }
@@ -774,6 +880,11 @@ SCORE: ${score}/10`;
     const weak = weakTopics(6);
     return `<section class="card hero slim"><h1>📈 Tu progreso</h1>
       <div class="chips"><span class="chip">Clases: <b>${lessonsDone()}</b></span><span class="chip">Horas: <b>${(totalMin / 60).toFixed(1)}</b></span><span class="chip">Palabras: <b>${Object.keys(S.cards).length}</b></span><span class="chip">🔥 <b>${S.streak.count}</b></span></div></section>
+      ${(() => { const w = weekStats(); const verdict = { A: "Excelente. Así se llega a C1.", B: "Bien, pero puedes más. Completa todos los días planeados.", C: "Te falta constancia. Esta semana: rutina completa todos los días.", D: "Así no vas a avanzar. Vuelve a lo básico: 30 minutos diarios, sin excepción.", F: "Semana perdida. Hoy empezamos de nuevo: no rompas la racha." }[w.grade];
+        return `<section class="card report"><h2>📋 Boletín semanal de ${TEACHER}</h2>
+        <div class="report-row"><div class="grade-big g-${w.grade}">${w.grade}</div>
+        <div><div>Días estudiados: <b>${w.studied}/${w.planned}</b></div><div>Puntos: <b>${w.xp}</b> / ${DAILY_XP * w.planned}</div><div>Palabras de speaking: <b>${w.speak}</b> / 300</div><div>Minutos: <b>${w.minutes}</b> · Tareas: <b>${w.hw}</b></div></div></div>
+        <p class="teacher-verdict">👩‍🏫 “${verdict}”</p></section>`; })()}
       <section class="card"><h2>Camino a ${S.profile.goal}</h2>
         ${byLevel.map((b) => `<div class="lvl"><b>${b.l}</b><div class="bar"><span style="width:${(b.d / b.n) * 100}%"></span></div><span class="muted">${b.d}/${b.n}</span></div>`).join("")}
         <p class="muted">Estimado: ${Math.max(0, (C.length - unitsDone) * 5)} clases restantes hasta terminar C1 (≈ ${Math.ceil(((C.length - unitsDone) * 5) / Math.max(1, S.settings.days.length))} semanas a tu ritmo). Complementa con 15 min de escucha diaria para llegar de verdad.</p></section>
@@ -860,6 +971,20 @@ SCORE: ${score}/10`;
         const u = ctx.unit; const uid = q.unitId || u.id;
         record(uid, "grammar", ok, ok ? null : { q: q.q, correct: q.o[q.a], pick: q.o[oi] });
         if (!ok) addMistakeCard(uid, q.q.replace("___", "…"), q.q.replace("___", q.o[q.a]));
+        save(); rerenderKeepScroll(); break;
+      }
+      case "sayEs": speakEs(el.dataset.text); break;
+      case "drillReveal": { const d = ctx.drill; d.phase = "reveal"; speak(d.queue[d.i].en); rerenderKeepScroll(); break; }
+      case "drillGrade": {
+        const d = ctx.drill; const it = d.queue[d.i]; const ok = el.dataset.ok === "1";
+        if (ok) { if (!it.missed) d.right++; } else {
+          if (!it.missed) d.wrong++;
+          it.missed = true; d.queue.splice(Math.min(d.queue.length, d.i + 4), 0, { ...it }); // vuelve 3 tarjetas después
+          addMistakeCard(ctx.unit.id, it.es, it.en);
+        }
+        record(ctx.unit.id, "speaking", ok);
+        const l = dayLog(); l.drills = (l.drills || 0) + 1;
+        d.i++; d.phase = "prompt"; if (d.i >= d.queue.length) { d.done = true; toast("🎯 ¡Entrenamiento completado!"); }
         save(); rerenderKeepScroll(); break;
       }
       case "whyAI": {
@@ -950,7 +1075,13 @@ Usa exactamente estas secciones:
           addCards(u);
         }
         if (need === "listen" && !ctx.shadow.some((x) => x.score != null) && !ctx.dict.some((x) => x.score != null)) return toast("Haz al menos un shadowing o dictado");
-        if (need === "speak" && !(ctx.sp && Object.values(ctx.sp).some((s) => s.text))) return toast("Graba tu respuesta primero 🎙");
+        if (need === "speak") {
+          const minW = u.level === "A1" ? 25 : 45;
+          const best = Math.max(0, ...Object.values(ctx.sp || {}).map((x) => words(x.text).length));
+          if (!best) return toast("Graba tu respuesta primero 🎙");
+          if (best < minW) return toast(`${TEACHER} dice: necesitas al menos ${minW} palabras. Llevas ${best}. ¡Habla un poco más!`);
+        }
+        if (need === "practice" && !(ctx.drill && ctx.drill.done)) return toast("Termina el entrenamiento con " + TEACHER + " (responder en voz alta)");
         const score = need === "test" ? quizScore("test") : need === "learn" || need === "practice" ? quizScore(need) : null;
         const mins = Math.max(5, Math.round((Date.now() - (ctx.started || Date.now())) / 60000));
         const wasUnit = S.progress.unit;
@@ -1058,14 +1189,14 @@ Usa exactamente estas secciones:
         try { r = await window.AI.reviewWriting({ level: u.level, unit: u, task: h.task, text }); }
         catch (err) { toast(err.message); r = autoReview(u, text); r.text = `> ⚠️ ${err.message}\n\n` + r.text; }
       } else r = autoReview(u, text);
-      h.feedback = r.text; h.score = r.score; h.status = "reviewed"; h.reviewed = today();
+      h.feedback = r.text; h.score = r.score; h.status = "reviewed"; h.reviewed = today(); dayLog().hw = (dayLog().hw || 0) + 1;
       record(u.id, "writing", (r.score || 0) >= 7);
       dayLog().minutes += 20; touchStreak(); save();
       out.innerHTML = md(r.text); e.submitter.disabled = false; toast("Tarea revisada ✔"); return;
     }
     if (kind === "typedSpeak") {
-      const st = ctx.sp[f.dataset.id]; st.text = (fd.get("t") || "").trim(); st.secs = 0; st.feedback = "";
-      if (st.text) { record(ctx.unit ? ctx.unit.id : curUnit().id, "speaking", words(st.text).length >= 40); save(); }
+      const st = ctx.sp[f.dataset.id]; st.text = (fd.get("t") || "").trim(); st.secs = 0; st.feedback = ""; st.typed = true;
+      if (st.text) { record(ctx.unit ? ctx.unit.id : curUnit().id, "speaking", words(st.text).length >= 40); dayLog().speakingWords += words(st.text).length; save(); }
       rerenderKeepScroll(); return;
     }
     if (kind === "chat") { const v = fd.get("m"); f.reset(); stopRec(); ctx.recording = null; sendChat(v); return; }

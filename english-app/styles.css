@@ -162,3 +162,22 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .why.no { background: var(--bad-soft); }
 .why b:first-child { display: block; margin-bottom: 2px; }
 .hint { background: var(--mid-soft); display: flex; flex-direction: column; gap: 8px; }
+.teacher { border-left: 0; background: linear-gradient(135deg, var(--primary-soft), var(--card)); }
+.teacher-line { display: flex; gap: 10px; align-items: flex-start; }
+.teacher-line > div { min-width: 0; }
+.avatar { font-size: 2rem; line-height: 1; }
+.teacher .en { font-style: italic; margin: 2px 0; }
+.tmsgs { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+.tmsgs li { padding: 8px 10px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+.tmsgs li.bad { background: var(--bad-soft); border-color: transparent; }
+.tmsgs li.mid { background: var(--mid-soft); border-color: transparent; }
+.tmsgs li.good { background: var(--good-soft); border-color: transparent; }
+.drillcard { min-height: 170px; }
+.grade.two { grid-template-columns: 1fr 1fr; }
+.report-row { display: flex; gap: 16px; align-items: center; }
+.grade-big { font-size: 3rem; font-weight: 800; width: 76px; height: 76px; border-radius: 18px; display: grid; place-items: center; flex: none; background: var(--primary-soft); color: var(--primary); }
+.g-A, .g-B { background: var(--good-soft); color: var(--good); }
+.g-C { background: var(--mid-soft); color: var(--mid); }
+.g-D, .g-F { background: var(--bad-soft); color: var(--bad); }
+.teacher-verdict { font-style: italic; margin-top: 10px; }
+.lock { background: var(--mid-soft); }
