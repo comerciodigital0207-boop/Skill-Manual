@@ -39,6 +39,7 @@
   }
   function save() {
     S.updatedAt = Date.now();
+    if (S.profile) { const cs = Object.values(S.cards); dayLog().snap = [cs.length, cs.filter((c) => c.box >= 4).length]; }
     trimState();
     try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) { /* almacenamiento no disponible */ }
     if (window.APP_PERSIST) window.APP_PERSIST(S); // copia en la nube cuando la app corre como Artifact
@@ -166,6 +167,7 @@
     t[ok ? 0 : 1]++;
     const k = S.skillStats[skill] || (S.skillStats[skill] = [0, 0]);
     k[ok ? 0 : 1]++;
+    const dl = dayLog(); if (ok) dl.r = (dl.r || 0) + 1; else dl.w = (dl.w || 0) + 1;
     if (!ok && detail) {
       S.mistakes.unshift({ date: today(), unitId, skill, ...detail });
       S.mistakes = S.mistakes.slice(0, 200);
@@ -227,9 +229,11 @@
     if (!l) return 0;
     return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15;
   }
-  function weekStats() {
+  function weekStats(offset = 0) {
     const start = (S.profile && S.profile.created) || today();
-    const days = Array.from({ length: 7 }, (_, i) => addDays(today(), i - 6)).filter((d) => d >= start);
+    const end = addDays(today(), -7 * offset);
+    const days = Array.from({ length: 7 }, (_, i) => addDays(end, i - 6)).filter((d) => d >= start);
+    if (!days.length) return null;
     const planned = days.filter((d) => S.settings.days.includes(new Date(d + "T12:00:00").getDay())).length || 1;
     const logs = days.map((d) => S.log[d]).filter(Boolean);
     const studied = logs.filter((l) => dayXP(l) >= 20).length;
@@ -239,7 +243,105 @@
     const hw = logs.reduce((n, l) => n + (l.hw || 0), 0);
     const score = Math.round(100 * (0.4 * Math.min(1, studied / planned) + 0.3 * Math.min(1, xp / (DAILY_XP * planned)) + 0.3 * Math.min(1, speak / 300)));
     const grade = score >= 90 ? "A" : score >= 75 ? "B" : score >= 55 ? "C" : score >= 35 ? "D" : "F";
-    return { planned, studied, xp, minutes, speak, hw, score, grade };
+    const r = logs.reduce((n, l) => n + (l.r || 0), 0), w = logs.reduce((n, l) => n + (l.w || 0), 0);
+    const snaps = days.map((d) => S.log[d] && S.log[d].snap).filter(Boolean);
+    return { planned, studied, xp, minutes, speak, hw, score, grade, acc: pct(r, w), end, snap: snaps.length ? snaps[snaps.length - 1] : null };
+  }
+  function goalPlan() {
+    const goal = (S.profile && S.profile.goal) || "C1";
+    const lastIdx = C.reduce((m, u, i) => (u.level === goal ? i : m), C.length - 1);
+    const remaining = Math.max(0, (lastIdx + 1 - S.progress.unit) * 5 - S.progress.step);
+    const steps14 = Array.from({ length: 14 }, (_, i) => S.log[addDays(today(), -i)]).reduce((n, l) => n + (l ? l.steps.length : 0), 0);
+    const pace = steps14 / 2; // clases por semana (últimas 2 semanas)
+    const date = S.settings.goalDate || "";
+    const weeksLeft = date ? Math.max(0.5, (new Date(date + "T12:00:00") - new Date(today() + "T12:00:00")) / (7 * 864e5)) : null;
+    const needed = weeksLeft ? Math.ceil(remaining / weeksLeft) : null;
+    const projected = pace > 0 ? addDays(today(), Math.ceil((remaining / pace) * 7)) : null;
+    return { goal, remaining, pace, date, needed, projected };
+  }
+  const fmtDate = (d) => new Date(d + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
+  function objectives() {
+    const w = weekStats() || { studied: 0, planned: 1, speak: 0 };
+    const xp = dayXP(S.log[today()]);
+    const od = overdueCards();
+    const lateHw = S.homework.filter((h) => h.status === "pending" && h.due < today()).length;
+    const g = goalPlan();
+    const st = (ok, partial) => (ok ? ["good", "✅", "Cumplido"] : partial ? ["mid", "⏳", "En curso"] : ["bad", "⚠️", "Atrasado"]);
+    const list = [
+      { name: "Meta diaria de puntos", val: `${xp} / ${DAILY_XP} ⚡`, p: xp / DAILY_XP, s: st(xp >= DAILY_XP, true) },
+      { name: "Días de estudio esta semana", val: `${w.studied} / ${w.planned}`, p: w.studied / w.planned, s: st(w.studied >= w.planned, w.studied > 0) },
+      { name: "Speaking esta semana", val: `${w.speak} / 300 palabras`, p: w.speak / 300, s: st(w.speak >= 300, w.speak > 0) },
+      { name: "Repaso al día", val: od ? `${od} tarjetas atrasadas` : "Sin atrasos", p: od ? Math.max(0, 1 - od / 20) : 1, s: st(!od, od < LOCK_DUE) },
+      { name: "Tareas al día", val: lateHw ? `${lateHw} atrasada(s)` : "Sin atrasos", p: lateHw ? 0 : 1, s: st(!lateHw, false) }
+    ];
+    if (g.needed != null) list.push({ name: `Ritmo para llegar a ${g.goal}`, val: `${g.pace.toFixed(1)} / ${g.needed} clases por semana`, p: g.needed ? g.pace / g.needed : 1, s: g.pace >= g.needed ? ["good", "✅", "Vas a tiempo"] : g.pace >= g.needed * 0.75 ? ["mid", "⏳", "Ritmo justo"] : ["bad", "⚠️", "Vas con retraso"] });
+    return list;
+  }
+  function scoreNow() {
+    const o = objectives();
+    return Math.round((o.reduce((n, x) => n + Math.min(1, Math.max(0, x.p)), 0) / o.length) * 100);
+  }
+  // Gráfica de barras de una sola serie con línea de meta (SVG, sin librerías)
+  function barChart({ data, goal, goalLabel, max, fmt = (v) => v }) {
+    const W = 320, H = 150, L = 28, B = 22, T = 14, iw = W - L - 6, ih = H - B - T;
+    const raw = Math.max(max || 0, goal || 0, ...data.map((d) => d.v || 0), 1);
+    const step = Math.pow(10, Math.floor(Math.log10(raw))) / 2;
+    const top = max && raw <= max ? max : Math.ceil((raw * 1.08) / step) * step; // tope redondo
+    const y = (v) => T + ih - (v / top) * ih;
+    const bw = Math.min(26, iw / data.length - 6);
+    const ticks = [0, Math.round(top / 2), Math.round(top)];
+    const last = data.map((d) => d.v != null).lastIndexOf(true);
+    return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img">
+      ${ticks.map((t) => `<line x1="${L}" x2="${W - 4}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${L - 4}" y="${y(t) + 3}" class="tick" text-anchor="end">${t}</text>`).join("")}
+      ${data.map((d, i) => { const x = L + 3 + i * (iw / data.length) + (iw / data.length - bw) / 2; const h = d.v ? Math.max(2, (d.v / top) * ih) : 0;
+        return `<g class="bcol"><rect x="${x - 3}" y="${T}" width="${bw + 6}" height="${ih}" fill="transparent"><title>${esc(d.tip)}</title></rect>
+          ${h ? `<path d="M${x},${T + ih} V${T + ih - h + 4} q0,-4 4,-4 h${bw - 8} q4,0 4,4 V${T + ih} Z" class="mark"><title>${esc(d.tip)}</title></path>` : ""}
+          ${i === last && d.v != null ? `<text x="${x + bw / 2}" y="${y(d.v) - 4}" text-anchor="middle" class="vlabel">${fmt(d.v)}</text>` : ""}
+          <text x="${x + bw / 2}" y="${H - 6}" text-anchor="middle" class="tick">${esc(d.label)}</text></g>`; }).join("")}
+      ${goal ? `<line x1="${L}" x2="${W - 4}" y1="${y(goal)}" y2="${y(goal)}" class="goal"/><text x="${L + 4}" y="${y(goal) - 4}" text-anchor="start" class="goal-l">${esc(goalLabel)}</text>` : ""}
+    </svg></div>
+    <details class="tableview"><summary>Ver como tabla</summary><table>${data.map((d) => `<tr><td>${esc(d.label)}</td><td>${d.v == null ? "—" : esc(fmt(d.v))}</td></tr>`).join("")}</table></details>`;
+  }
+  function scoreboard(compact) {
+    const now = scoreNow();
+    const prev = weekStats(1);
+    const o = objectives();
+    const okN = o.filter((x) => x.s[0] === "good").length;
+    const wk = weekStats();
+    const delta = prev && wk ? wk.score - prev.score : null;
+    if (compact) {
+      return `<section class="card score-mini" data-action="go" data-view="progress">
+        <div class="score-num">${now}<span>/100</span></div>
+        <div><b>Marcador de evolución</b><div class="muted">${okN} de ${o.length} objetivos cumplidos${delta != null ? ` · semana ${delta >= 0 ? "↑ +" : "↓ "}${delta}` : ""}</div>
+        <div class="bar"><span style="width:${now}%"></span></div></div></section>`;
+    }
+    const g = goalPlan();
+    const weeks = Array.from({ length: 8 }, (_, i) => weekStats(7 - i));
+    const wlab = (w) => new Date(w.end + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "numeric" });
+    const xpData = weeks.map((w) => w ? { label: wlab(w), v: w.xp, tip: `Semana al ${wlab(w)}: ${w.xp} puntos (${w.studied}/${w.planned} días)` } : { label: "", v: null, tip: "Sin datos" });
+    const accData = weeks.map((w) => w ? { label: wlab(w), v: w.acc, tip: w.acc == null ? `Semana al ${wlab(w)}: sin ejercicios` : `Semana al ${wlab(w)}: ${w.acc}% de acierto` } : { label: "", v: null, tip: "Sin datos" });
+    const vocData = weeks.map((w) => w ? { label: wlab(w), v: w.snap ? w.snap[0] : null, tip: w.snap ? `Semana al ${wlab(w)}: ${w.snap[0]} tarjetas, ${w.snap[1]} dominadas` : "Sin datos" } : { label: "", v: null, tip: "Sin datos" });
+    const planned = (wk && wk.planned) || S.settings.days.length;
+    return `<section class="card scoreboard">
+      <h2>🏆 Marcador de evolución</h2>
+      <div class="score-head"><div class="score-num big">${now}<span>/100</span></div>
+        <div><div><b>${okN} de ${o.length}</b> objetivos cumplidos</div>
+        ${delta != null ? `<div class="${delta >= 0 ? "up" : "down"}">${delta >= 0 ? "↑ +" : "↓ "}${delta} puntos vs. la semana pasada</div>` : '<div class="muted">La comparación semanal aparece desde tu segunda semana.</div>'}</div></div>
+      <div class="objs">${o.map((x) => `<div class="obj"><div class="obj-top"><span>${esc(x.name)}</span><span class="pill ${x.s[0]}">${x.s[1]} ${x.s[2]}</span></div>
+        <div class="obj-val">${esc(x.val)}</div><div class="bar"><span class="${x.s[0] === "bad" ? "low" : ""}" style="width:${Math.round(Math.min(1, Math.max(0, x.p)) * 100)}%"></span></div></div>`).join("")}</div>
+    </section>
+    <section class="card"><h2>🎯 Tu meta: ${g.goal}</h2>
+      <p>Te faltan <b>${g.remaining} clases</b> para terminar ${g.goal}. Tu ritmo actual: <b>${g.pace.toFixed(1)} clases por semana</b>.</p>
+      ${g.projected ? `<p>A este ritmo terminarías el <b>${fmtDate(g.projected)}</b>.</p>` : `<p class="muted">Completa clases esta semana para calcular tu fecha estimada.</p>`}
+      ${g.date ? `<p>Tu fecha meta es el <b>${fmtDate(g.date)}</b>: necesitas <b>${g.needed} clases por semana</b>. ${g.pace >= g.needed ? "✅ Vas a tiempo." : `⚠️ Te faltan ${(g.needed - g.pace).toFixed(1)} clases por semana para llegar.`}</p>` : `<p class="muted">Pon una fecha meta y ${TEACHER} te dirá cada semana si vas a tiempo.</p>`}
+      <form data-form="goalDate" class="row"><input type="date" name="goalDate" value="${g.date}" min="${addDays(today(), 7)}" aria-label="Fecha meta"><button class="btn small">${g.date ? "Cambiar fecha" : "Guardar fecha meta"}</button></form>
+    </section>
+    <section class="card"><h2>⚡ Puntos por semana</h2><p class="muted">La línea es tu meta semanal (${DAILY_XP} puntos × ${planned} días).</p>
+      ${barChart({ data: xpData, goal: DAILY_XP * planned, goalLabel: "meta " + DAILY_XP * planned })}</section>
+    <section class="card"><h2>✅ Acierto por semana</h2><p class="muted">Porcentaje de respuestas correctas. La línea marca el ${PASS}% que pide el examen.</p>
+      ${barChart({ data: accData, goal: PASS, goalLabel: PASS + "%", max: 100, fmt: (v) => v + "%" })}</section>
+    <section class="card"><h2>🗂 Vocabulario acumulado</h2><p class="muted">Total de tarjetas al final de cada semana.</p>
+      ${barChart({ data: vocData })}</section>`;
   }
   function lessonsDone() {
     return Object.values(S.log).reduce((n, d) => n + d.steps.length, 0);
@@ -407,6 +509,8 @@
 
     ${teacherCard()}
 
+    ${scoreboard(true)}
+
     ${currentLevel() === "A2" && !Object.keys(S.unitScores).some((k) => k.startsWith("a2")) ? `<section class="card hint">
       <b>¿Te sientes con muy poca base?</b> Te recomiendo empezar por <b>A1 · Fundamentos</b>: clases paso a paso desde cero, con el porqué de cada cosa.
       <button class="btn primary" data-action="changeLevel" data-level="A1">Empezar en A1</button></section>` : ""}
@@ -529,7 +633,7 @@
     if (late.length) msgs.push(["bad", `Tu tarea de “${C[unitIndex(late[0].unitId)].title}” está atrasada. Sin tarea no puedes presentar el examen de la unidad.`]);
     const weak = weakTopics(1)[0];
     if (weak) msgs.push(["mid", `Tu punto débil ahora es “${weak.unit.grammar.name}” (${weak.p}% de acierto). Repásalo hoy.`]);
-    const w = weekStats();
+    const w = weekStats() || { speak: 0 };
     if (w.speak < 150 && Object.keys(S.log).length > 2) msgs.push(["mid", `Esta semana hablaste solo ${w.speak} palabras. La meta es 300: para hablar, hay que hablar.`]);
     if (!msgs.length) msgs.push(["good", S.streak.count >= 3 ? `¡${S.streak.count} días seguidos! Así se aprende. Sigue exactamente así.` : "Vamos paso a paso. Haz tu rutina de hoy completa y mañana estarás mejor que hoy."]);
     const hello = `Hi ${name}! Ready for today's class? Let's go!`;
@@ -928,7 +1032,8 @@ SCORE: ${score}/10`;
     const weak = weakTopics(6);
     return `<section class="card hero slim"><h1>📈 Tu progreso</h1>
       <div class="chips"><span class="chip">Clases: <b>${lessonsDone()}</b></span><span class="chip">Horas: <b>${(totalMin / 60).toFixed(1)}</b></span><span class="chip">Palabras: <b>${Object.keys(S.cards).length}</b></span><span class="chip">🔥 <b>${S.streak.count}</b></span></div></section>
-      ${(() => { const w = weekStats(); const verdict = { A: "Excelente. Así se llega a C1.", B: "Bien, pero puedes más. Completa todos los días planeados.", C: "Te falta constancia. Esta semana: rutina completa todos los días.", D: "Así no vas a avanzar. Vuelve a lo básico: 30 minutos diarios, sin excepción.", F: "Semana perdida. Hoy empezamos de nuevo: no rompas la racha." }[w.grade];
+      ${scoreboard(false)}
+      ${(() => { const w = weekStats() || { grade: "C", studied: 0, planned: 1, xp: 0, speak: 0, minutes: 0, hw: 0 }; const verdict = { A: `Excelente. Así se llega a ${S.profile.goal}.`, B: "Bien, pero puedes más. Completa todos los días planeados.", C: "Te falta constancia. Esta semana: rutina completa todos los días.", D: "Así no vas a avanzar. Vuelve a lo básico: 30 minutos diarios, sin excepción.", F: "Semana perdida. Hoy empezamos de nuevo: no rompas la racha." }[w.grade];
         return `<section class="card report"><h2>📋 Boletín semanal de ${TEACHER}</h2>
         <div class="report-row"><div class="grade-big g-${w.grade}">${w.grade}</div>
         <div><div>Días estudiados: <b>${w.studied}/${w.planned}</b></div><div>Puntos: <b>${w.xp}</b> / ${DAILY_XP * w.planned}</div><div>Palabras de speaking: <b>${w.speak}</b> / 300</div><div>Minutos: <b>${w.minutes}</b> · Tareas: <b>${w.hw}</b></div></div></div>
@@ -1257,6 +1362,10 @@ Usa exactamente estas secciones:
       record(u.id, "writing", (r.score || 0) >= 7);
       dayLog().minutes += 20; touchStreak(); save();
       out.innerHTML = md(r.text); e.submitter.disabled = false; toast("Tarea revisada ✔"); return;
+    }
+    if (kind === "goalDate") {
+      S.settings.goalDate = fd.get("goalDate") || ""; save(); rerenderKeepScroll();
+      toast(S.settings.goalDate ? "Fecha meta guardada" : "Fecha meta quitada"); return;
     }
     if (kind === "addCard") {
       const en = (fd.get("en") || "").trim(), es = (fd.get("es") || "").trim();

@@ -198,3 +198,30 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .link.small { font-size: .8rem; padding: 0; }
 @media (max-width: 480px) { .vrow { grid-template-columns: auto 1fr; } .vmeta { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; } }
 [hidden] { display: none !important; }
+:root { --chart: #2f5bea; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --chart: #5b7cf0; } }
+:root[data-theme="dark"] { --chart: #5b7cf0; }
+.score-mini { display: flex; gap: 14px; align-items: center; cursor: pointer; }
+.score-mini > div:last-child { flex: 1; min-width: 0; }
+.score-num { font-size: 2.2rem; font-weight: 800; color: var(--primary); line-height: 1; font-variant-numeric: tabular-nums; }
+.score-num span { font-size: .9rem; color: var(--muted); font-weight: 600; }
+.score-num.big { font-size: 3.2rem; }
+.score-head { display: flex; gap: 16px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+.up { color: var(--good); font-weight: 600; }
+.down { color: var(--bad); font-weight: 600; }
+.objs { display: grid; gap: 10px; }
+.obj { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+.obj-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
+.obj-val { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.obj .bar { margin: 6px 0 0; height: 8px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .tick { fill: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.chart .vlabel { fill: var(--text); font-size: 10px; font-weight: 700; }
+.chart .mark { fill: var(--chart); }
+.chart .bcol:hover .mark { opacity: .8; }
+.chart .goal { stroke: var(--text); stroke-width: 1.5; stroke-dasharray: 4 3; opacity: .7; }
+.chart .goal-l { fill: var(--text); font-size: 9px; font-weight: 600; }
+.tableview { font-size: .9rem; }
+.tableview table { border-collapse: collapse; margin-top: 6px; }
+.tableview td { border-bottom: 1px solid var(--line); padding: 4px 12px 4px 0; font-variant-numeric: tabular-nums; }
