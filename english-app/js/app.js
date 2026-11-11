@@ -3,7 +3,7 @@
   "use strict";
   const C = window.CURRICULUM;
   const PLAN = window.DAY_PLAN;
-  const LEVELS = ["A2", "B1", "B2", "C1"];
+  const LEVELS = ["A1", "A2", "B1", "B2", "C1"];
   const STORE_KEY = "englishCoach.v1";
   const SRS_DAYS = [0, 1, 3, 7, 14, 30, 60, 120];
 
@@ -20,7 +20,8 @@
     homework: [],
     streak: { count: 0, last: null },
     alarms: { study: null, review: null },
-    unitScores: {}
+    unitScores: {},
+    curriculumVersion: 2
   });
 
   let S = load();
@@ -43,6 +44,10 @@
     if (S.mistakes.length > 120) S.mistakes = S.mistakes.slice(0, 120);
   }
   function mergeState(parsed) {
+    // v1 no tenía nivel A1: las posiciones guardadas se corren 8 unidades
+    if (parsed && parsed.profile && !parsed.curriculumVersion && parsed.progress) {
+      parsed = { ...parsed, progress: { ...parsed.progress, unit: (parsed.progress.unit || 0) + 8 }, curriculumVersion: 2 };
+    }
     const d = defaults();
     return { ...d, ...parsed, settings: { ...d.settings, ...(parsed.settings || {}) }, skillStats: { ...d.skillStats, ...(parsed.skillStats || {}) } };
   }
@@ -297,10 +302,13 @@
     if (!ctx.stage) {
       return `<section class="card hero">
         <h1>👋 Bienvenido a tu English Coach</h1>
-        <p>Un plan diario de <b>A2 a C1</b>: clases cortas, repaso de lo de ayer, tareas corregidas, speaking, evaluaciones y alarmas. Todo se guarda en este dispositivo.</p>
+        <p>Un plan diario <b>desde cero (A1) hasta C1</b>, pensado para que <b>hables y entiendas</b> desde el primer día: frases reales, escucha, repetición en voz alta y repaso de lo de ayer.</p>
       </section>
       <form class="card" data-form="onboard">
         <label>¿Cómo te llamas?<input name="name" required placeholder="Tu nombre"></label>
+        <label>¿Cómo está tu inglés hoy?<select name="base">
+          <option value="zero">Muy básico: entiendo y hablo muy poco (empiezo por los fundamentos)</option>
+          <option value="test">Tengo bases: quiero hacer el test de nivel</option></select></label>
         <label>Tu meta<select name="goal"><option value="B2">B2 – comunicarme con seguridad</option><option value="C1" selected>C1 – hablar con fluidez y precisión</option></select></label>
         <label>Minutos al día que puedes estudiar<select name="minutes"><option>20</option><option selected>30</option><option>45</option><option>60</option></select></label>
         <label>Hora de tu clase diaria<input type="time" name="studyTime" value="19:00"></label>
@@ -366,6 +374,8 @@
       </div>
     </section>
 
+    ${routineCard(log, due)}
+
     ${prevLog ? `<section class="card">
       <h2>🧠 Lo que hiciste ${prev === addDays(t, -1) ? "ayer" : "la última vez (" + prev + ")"}</h2>
       <ul class="clean">${prevLog.steps.map((s) => `<li>${PLAN.find((p) => p.key === s.step).icon} ${esc(s.title)} — ${PLAN.find((p) => p.key === s.step).name}${s.score != null ? ` <span class="pill">${s.score}%</span>` : ""}</li>`).join("")}</ul>
@@ -410,6 +420,30 @@
     </section>`;
   }
 
+  // ───────────────────────── MÉTODO: rutina diaria ─────────────────────────
+  function routineCard(log, due) {
+    const blocks = [
+      { done: log.reviews > 0 || (!due && Object.keys(S.cards).length > 0), icon: "🔁", t: "Repaso", m: "5 min", d: "Tarjetas de ayer en voz alta", act: `data-action="go" data-view="review"` },
+      { done: log.steps.length > 0, icon: "📘", t: "Clase del día", m: "10-15 min", d: "Un paso del plan", act: `data-action="go" data-view="class"` },
+      { done: !!log.listened, icon: "🎧", t: "Escucha real", m: "10 min", d: "Video o podcast del tema, repitiendo frases", act: `data-action="listened" href="${ytLink(curUnit().yt)}" target="_blank" rel="noopener"`, a: true },
+      { done: log.speakingWords >= 30, icon: "🎤", t: "Habla", m: "5 min", d: "En voz alta, aunque te equivoques", act: `data-action="go" data-view="speaking"` }
+    ];
+    const n = blocks.filter((b) => b.done).length;
+    return `<section class="card">
+      <h2>🗓 Tu rutina de hoy (30 min) <span class="pill ${n === 4 ? "good" : ""}">${n}/4</span></h2>
+      <div class="routine">${blocks.map((b) => { const tag = b.a ? "a" : "button"; return `<${tag} class="rblock ${b.done ? "done" : ""}" ${b.act}><span class="ri">${b.done ? "✅" : b.icon}</span><span><b>${b.t}</b> <span class="muted">${b.m}</span><br><span class="muted">${b.d}</span></span></${tag}>`; }).join("")}</div>
+      <details><summary>¿Por qué este método funciona?</summary>
+        <ul class="clean">
+          <li><b>Frases completas, no palabras sueltas:</b> los nativos hablan en bloques (“Can I have…?”, “I'm from…”). Memoriza bloques y podrás armar frases sin traducir.</li>
+          <li><b>Escuchar mucho y entender:</b> el oído va primero. 10 minutos diarios de inglés real que casi entiendes valen más que una hora de gramática.</li>
+          <li><b>Repetir en voz alta (shadowing):</b> imitar audio de nativos entrena pronunciación, ritmo y confianza al mismo tiempo.</li>
+          <li><b>Hablar desde el día 1:</b> equivocarse es parte del método. Primero repites un ejemplo, después lo dices con tu vida.</li>
+          <li><b>Repaso espaciado:</b> repasar justo antes de olvidar fija lo aprendido para siempre. Por eso cada día empiezas con lo de ayer.</li>
+          <li><b>Poco pero todos los días:</b> 30 minutos diarios superan a 3 horas un solo día. La racha 🔥 es tu mejor aliada.</li>
+        </ul></details>
+    </section>`;
+  }
+
   // ───────────────────────── CLASE ─────────────────────────
   function viewClass() {
     if (finished()) return `<section class="card"><h2>🏆 Plan completado</h2><p>Repasa unidades desde Progreso → Temario o practica speaking con IA.</p></section>`;
@@ -438,6 +472,8 @@
       <h2>📐 ${esc(u.grammar.name)}</h2>
       <p>${u.grammar.explain}</p>
       <ul class="examples">${u.grammar.examples.map((e) => `<li><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> ${esc(e)}</li>`).join("")}</ul>
+      ${u.sound ? `<div class="sound"><b>🗣 Suena como nativo:</b> ${u.sound}</div>` : ""}
+      <p class="muted">Escucha cada ejemplo y repítelo en voz alta 3 veces, imitando el ritmo. Así se aprende a hablar, no solo a leer.</p>
       ${window.AI.enabled() ? `<details><summary>🤖 Pregúntale al profesor IA sobre este tema</summary>
         <form data-form="askAI"><input name="q" placeholder="Ej: ¿cuándo uso 'since' y cuándo 'for'?" required><button class="btn small">Preguntar</button></form><div id="aiAnswer"></div></details>` : ""}
     </section>`;
@@ -538,6 +574,9 @@
   }
   function stepSpeak(u) {
     return `<section class="card"><h2>🎤 Speaking</h2>
+      ${u.model ? `<div class="model"><b>1. Escucha y repite este ejemplo</b> (2 veces, en voz alta)
+        <p><button class="icon" data-action="say" data-text="${esc(u.model)}">🔊</button> ${esc(u.model)}</p>
+        <b>2. Ahora dilo con TU información</b> (cambia nombres, lugares, horas)</div>` : ""}
       <p class="muted">Tips: antes de hablar, piensa 30 s en 3 ideas. Usa la gramática <b>${esc(u.grammar.name)}</b> y al menos 3 palabras: ${u.vocab.slice(0, 5).map((v) => `<span class="pill">${esc(v[0])}</span>`).join(" ")}</p>
       ${speakingPanel(u.speaking, "unit-" + u.id)}
     </section>
@@ -638,8 +677,10 @@
   function autoReview(u, text) {
     const w = words(text);
     const target = /(\d+)(?:-(\d+))?\s*palabras/.exec(u.writing);
-    const min = target ? parseInt(target[1], 10) : 100;
-    const used = u.vocab.filter(([en]) => text.toLowerCase().includes(en.toLowerCase().split(" (")[0].split(" / ")[0]));
+    const sentencesTarget = /(\d+)(?:-(\d+))?\s*(?:frases|líneas)/.exec(u.writing);
+    const min = target ? parseInt(target[1], 10) : sentencesTarget ? parseInt(sentencesTarget[1], 10) * 6 : 100;
+    const core = (en) => en.toLowerCase().split(" (")[0].split(" / ")[0].replace(/\.\.\.|…/g, "").trim();
+    const used = u.vocab.filter(([en]) => core(en) && text.toLowerCase().includes(core(en)));
     const connectors = ["however", "although", "because", "so", "then", "also", "moreover", "therefore", "despite", "while", "when", "but", "first", "finally"].filter((c) => w.includes(c));
     const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 2);
     const avg = sentences.length ? Math.round(w.length / sentences.length) : 0;
@@ -764,7 +805,7 @@ SCORE: ${score}/10`;
     const el = e.target.closest("[data-action]");
     if (!el || el.tagName === "SELECT" || (el.tagName === "INPUT" && el.type === "file")) return;
     const a = el.dataset.action;
-    if (el.tagName === "A" && a !== "go") return;
+    if (el.tagName === "A" && a !== "go" && a !== "listened") return;
     if (a === "go") { e.preventDefault(); stopRec(); $("#banner").hidden = true; return go(el.dataset.view); }
 
     switch (a) {
@@ -854,6 +895,11 @@ SCORE: ${score}/10`;
       case "flip": ctx.flip = true; render(); break;
       case "grade": { const c = dueCards()[0]; if (c) { gradeCard(c, +el.dataset.q); touchStreak(); save(); } ctx.flip = false; render(); break; }
       case "warmup": go("review", { warm: buildWarmup() }); break;
+      case "listened": {
+        const l = dayLog();
+        if (!l.listened) { l.listened = true; l.minutes += 10; touchStreak(); save(); setTimeout(render, 300); toast("🎧 Escucha marcada. Repite en voz alta las frases que entiendas."); }
+        break;
+      }
       case "warmAns": {
         const w = ctx.warm; const q = w.items[w.i]; const ok = +el.dataset.i === q.a;
         if (ok) w.right++; record(q.unitId, "grammar", ok, ok ? null : { q: q.q, correct: q.o[q.a], pick: q.o[+el.dataset.i] });
@@ -918,6 +964,7 @@ SCORE: ${score}/10`;
       S.profile = { name: fd.get("name").trim(), goal: fd.get("goal"), minutes: +fd.get("minutes"), created: today() };
       S.settings.studyTime = fd.get("studyTime") || "19:00"; S.settings.reviewTime = fd.get("reviewTime") || "08:00";
       const tmp = S.profile; S.profile = null; // aún en onboarding
+      if (fd.get("base") === "zero") { ctx = { result: "A1", pending: tmp }; finishOnboarding(); return; }
       ctx = { stage: "test", qs: placementQuestions(), i: 0, answers: [], pending: tmp };
       render(); return;
     }

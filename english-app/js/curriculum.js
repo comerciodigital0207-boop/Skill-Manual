@@ -1,6 +1,167 @@
-/* Currículo: 4 niveles (A2 → C1) × 8 unidades × 5 días = 160 clases.
+/* Currículo: 5 niveles (A1 → C1) × 8 unidades × 5 días = 200 clases.
    Cada unidad: gramática, vocabulario, quiz, speaking, tarea escrita y búsquedas de recursos. */
 window.CURRICULUM = [
+  // ───────────────────────────── A1 · Fundamentos (desde cero, 100% práctico) ─────────────────────────────
+  {
+    id: "a1-1", level: "A1", title: "Hello! Me presento",
+    grammar: {
+      name: "Verb to be: I am / you are + My name is",
+      explain: "Para presentarte usa <b>I'm</b> (yo soy/estoy). Es la forma corta de <i>I am</i> y es la que usan los nativos al hablar. <b>My name is...</b> = me llamo. <b>Nice to meet you</b> = mucho gusto. Aprende las frases completas, como bloques, sin traducir palabra por palabra.",
+      examples: ["Hi! I'm Laura.", "My name is Laura.", "Nice to meet you.", "How are you? — I'm fine, thanks. And you?"]
+    },
+    sound: "“I'm” suena <b>aim</b>. “Nice to meet you” se dice unido: <b>naistumíchu</b>. En inglés las palabras se pegan; imita el audio, no la escritura.",
+    vocab: [["Hi / Hello", "hola", "Hi! How are you?"], ["I'm...", "yo soy / estoy", "I'm Laura."], ["My name is...", "me llamo...", "My name is Laura."], ["Nice to meet you", "mucho gusto", "Nice to meet you, Tom."], ["How are you?", "¿cómo estás?", "Hi Tom, how are you?"], ["I'm fine, thanks", "estoy bien, gracias", "I'm fine, thanks. And you?"], ["See you!", "¡nos vemos!", "See you tomorrow!"], ["Excuse me", "disculpe", "Excuse me, are you Tom?"]],
+    quiz: [
+      { q: "Hi! ___ Laura.", o: ["I'm", "I", "My", "Am"], a: 0 },
+      { q: "___ name is Carlos.", o: ["I", "My", "Me", "I'm"], a: 1 },
+      { q: "How are you? — ___", o: ["I'm fine, thanks.", "I'm Laura.", "Nice to meet you.", "See you!"], a: 0 },
+      { q: "Mucho gusto =", o: ["See you", "Nice to meet you", "Excuse me", "How are you?"], a: 1 }
+    ],
+    speaking: "Introduce yourself: say hello, your name, how you are and say goodbye.",
+    model: "Hi! I'm Laura. Nice to meet you. I'm fine, thanks. And you? See you!",
+    writing: "Escribe 4-5 frases presentándote (saludo, nombre, cómo estás, despedida).",
+    yt: "how to introduce yourself in english for beginners", sp: "english for absolute beginners podcast"
+  },
+  {
+    id: "a1-2", level: "A1", title: "About me",
+    grammar: {
+      name: "To be: he/she is, negative & questions",
+      explain: "<b>I'm / you're / he's / she's / we're / they're</b>. Negativo: añade <b>not</b> → <i>I'm not tired</i>, <i>she isn't here</i>. Pregunta: invierte → <i>Are you from Colombia? Is she a teacher?</i> Para la edad se usa <i>to be</i>: <i>I'm 30</i> (no 'I have 30').",
+      examples: ["I'm from Colombia.", "I'm 32 years old.", "Are you a teacher? — No, I'm not. I'm a nurse.", "She's my sister. She isn't married."]
+    },
+    sound: "Contracciones: <b>you're</b> (yor), <b>she's</b> (shiis), <b>isn't</b> (ísent). Úsalas siempre al hablar: suenan naturales.",
+    vocab: [["I'm from...", "soy de...", "I'm from Medellín."], ["I'm ... years old", "tengo ... años", "I'm 28 years old."], ["Where are you from?", "¿de dónde eres?", "Where are you from, Tom?"], ["What do you do?", "¿a qué te dedicas?", "What do you do? — I'm a nurse."], ["married / single", "casado / soltero", "I'm single."], ["I live in...", "vivo en...", "I live in Bogotá."], ["sister / brother", "hermana / hermano", "She's my sister."], ["job", "trabajo", "I like my job."]],
+    quiz: [
+      { q: "I ___ 30 years old.", o: ["have", "am", "is", "are"], a: 1 },
+      { q: "___ you from Mexico?", o: ["Is", "Are", "Do", "Am"], a: 1 },
+      { q: "She ___ married.", o: ["isn't", "aren't", "not", "don't"], a: 0 },
+      { q: "¿A qué te dedicas? =", o: ["Where are you from?", "What do you do?", "How old are you?", "Who are you?"], a: 1 }
+    ],
+    speaking: "Talk about you: where you are from, where you live, your age, your job and your family.",
+    model: "I'm Laura. I'm from Colombia and I live in Medellín. I'm 32 years old. I'm a nurse. I have one sister. She's 28.",
+    writing: "Escribe 6 frases sobre ti: de dónde eres, dónde vives, tu edad, tu trabajo y tu familia.",
+    yt: "verb to be english beginners", sp: "learn english beginner conversations"
+  },
+  {
+    id: "a1-3", level: "A1", title: "Numbers & time",
+    grammar: {
+      name: "Question words: what, where, when, who, how much",
+      explain: "Las preguntas empiezan con la palabra interrogativa: <b>What</b> (qué), <b>Where</b> (dónde), <b>When</b> (cuándo), <b>Who</b> (quién), <b>How much</b> (cuánto cuesta). La hora: <i>It's seven o'clock / It's half past seven (7:30) / It's quarter to eight (7:45)</i>. Al hablar, los nativos dicen casi siempre <i>It's seven thirty</i>.",
+      examples: ["What time is it? — It's ten thirty.", "Where is the bathroom?", "How much is it? — It's five dollars.", "When is your birthday? — It's in May."]
+    },
+    sound: "Cuidado: <b>thirteen</b> (13, acento al final: thur-TÍIN) vs <b>thirty</b> (30, acento al inicio: THÚR-ti). Igual 14/40, 15/50.",
+    vocab: [["What time is it?", "¿qué hora es?", "Excuse me, what time is it?"], ["It's ... o'clock", "son las ... en punto", "It's three o'clock."], ["half past", "y media", "It's half past six."], ["How much is it?", "¿cuánto cuesta?", "How much is this coffee?"], ["Where is...?", "¿dónde está...?", "Where is the station?"], ["When", "cuándo", "When is the meeting?"], ["today / tomorrow", "hoy / mañana", "See you tomorrow."], ["morning / evening", "mañana / noche (tarde)", "Good morning!"]],
+    quiz: [
+      { q: "___ is the bathroom?", o: ["What", "Where", "When", "Who"], a: 1 },
+      { q: "___ is it? — It's 10 dollars.", o: ["How much", "How many", "What time", "Where"], a: 0 },
+      { q: "7:30 =", o: ["It's half past seven", "It's seven half", "It's thirty seven", "It's half to seven"], a: 0 },
+      { q: "30 se dice:", o: ["thirteen", "thirty", "three", "third"], a: 1 }
+    ],
+    speaking: "Say your phone number, what time you get up, what time you go to bed, and ask the price of 3 things.",
+    model: "My phone number is three one five, two four six... I get up at six thirty. I go to bed at eleven. How much is this? How much is the coffee?",
+    writing: "Escribe 5 preguntas útiles con What/Where/When/How much y respóndelas.",
+    yt: "telling the time in english beginners", sp: "english numbers and time beginner"
+  },
+  {
+    id: "a1-4", level: "A1", title: "My day",
+    grammar: {
+      name: "Present simple: I / you / we / they",
+      explain: "Para rutinas: <b>I work, I eat, I go</b>. Negativo: <b>don't</b> + verbo → <i>I don't work on Sundays</i>. Pregunta: <b>Do you...?</b> → <i>Do you like coffee? — Yes, I do / No, I don't</i>. Con estas 3 formas ya puedes hablar de tu día.",
+      examples: ["I get up at six.", "I don't eat breakfast.", "Do you work on Saturdays? — Yes, I do.", "We go to the gym after work."]
+    },
+    sound: "<b>Don't</b> suena <b>dount</b> (con 'ou'). Las preguntas con <i>Do you...?</i> suben de tono al final.",
+    vocab: [["get up", "levantarse", "I get up at 6."], ["have breakfast", "desayunar", "I have breakfast at 7."], ["go to work", "ir al trabajo", "I go to work by bus."], ["work", "trabajar", "I work in an office."], ["cook", "cocinar", "I cook dinner."], ["watch TV", "ver televisión", "I watch TV at night."], ["go to bed", "acostarse", "I go to bed at 11."], ["every day", "todos los días", "I study English every day."]],
+    quiz: [
+      { q: "I ___ work on Sundays.", o: ["not", "don't", "doesn't", "no"], a: 1 },
+      { q: "___ you like pizza?", o: ["Are", "Do", "Is", "Does"], a: 1 },
+      { q: "Do you cook? — Yes, I ___.", o: ["am", "cook", "do", "does"], a: 2 },
+      { q: "Acostarse =", o: ["get up", "go to bed", "go to work", "have breakfast"], a: 1 }
+    ],
+    speaking: "Describe your day from morning to night using at least 6 verbs.",
+    model: "I get up at six. I have breakfast and I go to work by bus. I work from eight to five. In the evening I cook dinner and I watch TV. I go to bed at eleven.",
+    writing: "Escribe tu rutina en 6-8 frases (usa get up, have breakfast, go to work, go to bed...).",
+    yt: "daily routine in english beginners", sp: "daily routine english podcast beginner"
+  },
+  {
+    id: "a1-5", level: "A1", title: "Family & friends",
+    grammar: {
+      name: "Present simple: he / she (+s) and does",
+      explain: "Con <b>he / she / it</b> el verbo lleva <b>-s</b>: <i>She works, he lives, it costs</i>. Negativo y pregunta con <b>doesn't / does</b> (y el verbo ya sin -s): <i>He doesn't work. Does she live here?</i> Es el error más común de los hispanohablantes: practícalo mucho.",
+      examples: ["My mother works in a hospital.", "My brother lives in Spain.", "She doesn't drink coffee.", "Does he have children? — Yes, he does."]
+    },
+    sound: "La -s se pronuncia: <b>works</b> (uorks), <b>lives</b> (livs), <b>watches</b> (uáchiz). No te la comas.",
+    vocab: [["mother / father", "madre / padre", "My father is 60."], ["parents", "padres", "My parents live in Cali."], ["husband / wife", "esposo / esposa", "My husband works at night."], ["children / kids", "hijos / niños", "I have two kids."], ["friend", "amigo/a", "She's my best friend."], ["lives", "vive", "My sister lives near me."], ["has", "tiene", "He has a dog."], ["likes", "le gusta", "She likes music."]],
+    quiz: [
+      { q: "My sister ___ in London.", o: ["live", "lives", "living", "is live"], a: 1 },
+      { q: "He ___ like fish.", o: ["don't", "doesn't", "isn't", "not"], a: 1 },
+      { q: "___ she have a car?", o: ["Do", "Does", "Is", "Has"], a: 1 },
+      { q: "My father ___ two brothers.", o: ["have", "has", "haves", "is"], a: 1 }
+    ],
+    speaking: "Describe 3 people in your family or friends: where they live, what they do and what they like.",
+    model: "My mother is 58. She lives in Cali and she works in a school. My brother lives in Spain. He's a chef and he likes football. My best friend is Ana. She has two kids.",
+    writing: "Escribe 6-8 frases sobre tu familia (usa lives, works, has, likes y doesn't).",
+    yt: "present simple third person s beginners", sp: "english podcast family vocabulary"
+  },
+  {
+    id: "a1-6", level: "A1", title: "Survival English",
+    grammar: {
+      name: "Can / I'd like / I need: pedir y resolver",
+      explain: "Las frases que más vas a usar al viajar o en el trabajo. Pedir: <b>Can I have...?</b> / <b>I'd like...</b> (me gustaría). Pedir ayuda: <b>Can you help me?</b> <b>Can you repeat, please?</b> <b>Can you speak more slowly?</b> Necesidad: <b>I need...</b>. <i>Can</i> no cambia nunca (no 'cans').",
+      examples: ["Can I have a coffee, please?", "I'd like a table for two.", "Sorry, can you repeat that, please?", "I need help. Can you help me?"]
+    },
+    sound: "<b>Can</b> en frases suena débil: <b>kn</b> (“Kn I have...”). <b>Can't</b> suena fuerte: <b>kaant</b>. Así los distinguen los nativos.",
+    vocab: [["Can I have...?", "¿me da...?", "Can I have the check, please?"], ["I'd like...", "me gustaría / quisiera", "I'd like a glass of water."], ["Can you help me?", "¿me puede ayudar?", "Excuse me, can you help me?"], ["Can you repeat that?", "¿puede repetir?", "Sorry, can you repeat that?"], ["more slowly", "más despacio", "Can you speak more slowly?"], ["I need...", "necesito...", "I need a taxi."], ["I don't understand", "no entiendo", "Sorry, I don't understand."], ["What does ... mean?", "¿qué significa...?", "What does 'refund' mean?"]],
+    quiz: [
+      { q: "___ I have a sandwich, please?", o: ["Do", "Can", "Am", "Would"], a: 1 },
+      { q: "I ___ a room for two nights.", o: ["'d like", "like to", "can", "am"], a: 0 },
+      { q: "No entiendo =", o: ["I don't understand", "I not understand", "I no understand", "I'm not understand"], a: 0 },
+      { q: "Para pedir que hablen despacio:", o: ["Speak slow!", "Can you speak more slowly, please?", "You speak slowly", "Slowly please you"], a: 1 }
+    ],
+    speaking: "Role-play: you are in a café. Order food and a drink, ask the price, ask them to repeat, and ask for the check.",
+    model: "Hi! Can I have a cappuccino and a sandwich, please? How much is it? Sorry, can you repeat that, please? Thank you. Can I have the check, please?",
+    writing: "Escribe un diálogo corto (6-8 líneas) pidiendo algo en un café o un hotel.",
+    yt: "survival english phrases for travel", sp: "travel english phrases podcast"
+  },
+  {
+    id: "a1-7", level: "A1", title: "Home & city",
+    grammar: {
+      name: "There is / there are + prepositions (in, on, near)",
+      explain: "<b>There is</b> (hay, singular) / <b>There are</b> (hay, plural). Pregunta: <i>Is there a bank near here?</i> Respuesta: <i>Yes, there is / No, there isn't</i>. Lugar: <b>in</b> (dentro), <b>on</b> (sobre / en la calle), <b>near</b> (cerca), <b>next to</b> (al lado).",
+      examples: ["There's a park near my house.", "There are two bedrooms in my apartment.", "Is there a pharmacy near here?", "The bank is next to the supermarket."]
+    },
+    sound: "<b>There's</b> suena <b>ders</b> y <b>there are</b> suena <b>derar</b>. La 'th' se dice con la lengua entre los dientes.",
+    vocab: [["There is / There's", "hay (singular)", "There's a café on my street."], ["There are", "hay (plural)", "There are many shops."], ["near here", "cerca de aquí", "Is there an ATM near here?"], ["next to", "al lado de", "It's next to the bank."], ["apartment", "apartamento", "My apartment is small."], ["bedroom", "habitación", "There are two bedrooms."], ["supermarket", "supermercado", "The supermarket is near."], ["street", "calle", "I live on a quiet street."]],
+    quiz: [
+      { q: "___ two banks on my street.", o: ["There is", "There are", "They are", "It is"], a: 1 },
+      { q: "___ a pharmacy near here?", o: ["Is there", "Are there", "There is", "Has"], a: 0 },
+      { q: "The café is ___ the bank.", o: ["next to", "next", "near of", "in to"], a: 0 },
+      { q: "Hay un parque =", o: ["Have a park", "There's a park", "It's a park", "There are a park"], a: 1 }
+    ],
+    speaking: "Describe your home and your neighborhood: what there is and where things are.",
+    model: "I live in an apartment. There are two bedrooms and there's a small kitchen. Near my house there's a park and a supermarket. The pharmacy is next to the bank.",
+    writing: "Describe tu casa y tu barrio en 6-8 frases usando there is / there are.",
+    yt: "there is there are english beginners", sp: "english podcast home and city"
+  },
+  {
+    id: "a1-8", level: "A1", title: "Yesterday",
+    grammar: {
+      name: "Past basics: was / were + went, had, did",
+      explain: "Pasado de <i>to be</i>: <b>I was / you were / he was</b> → <i>I was tired</i>. Verbos más usados en pasado (apréndelos ya): <b>went</b> (fui), <b>had</b> (tuve/comí), <b>did</b> (hice), <b>saw</b> (vi), <b>worked</b> (trabajé). Pregunta: <i>What did you do yesterday?</i>",
+      examples: ["Yesterday I was very tired.", "I went to the supermarket.", "I had dinner with my family.", "What did you do on the weekend? — I watched a movie."]
+    },
+    sound: "La terminación -ed: <b>worked</b> (uorkt), <b>watched</b> (uácht), <b>played</b> (pleid). No digas “work-ed”.",
+    vocab: [["yesterday", "ayer", "I was at home yesterday."], ["was / were", "fui-estuve / fuimos-estuvimos", "We were happy."], ["went", "fui (go)", "I went to the gym."], ["had", "tuve / comí (have)", "I had lunch at one."], ["did", "hice (do)", "I did my homework."], ["saw", "vi (see)", "I saw a good movie."], ["last night", "anoche", "I watched TV last night."], ["on the weekend", "el fin de semana", "What did you do on the weekend?"]],
+    quiz: [
+      { q: "Yesterday I ___ very busy.", o: ["am", "was", "were", "be"], a: 1 },
+      { q: "I ___ to the beach last weekend.", o: ["go", "went", "goed", "was go"], a: 1 },
+      { q: "What ___ you do yesterday?", o: ["do", "did", "were", "was"], a: 1 },
+      { q: "Anoche =", o: ["last night", "yesterday night", "past night", "the night"], a: 0 }
+    ],
+    speaking: "Tell what you did yesterday from morning to night.",
+    model: "Yesterday I got up at seven. I went to work and I had lunch with a friend. In the evening I was tired, so I watched a movie and I went to bed early.",
+    writing: "Escribe 6-8 frases sobre lo que hiciste ayer (usa was, went, had, did, saw).",
+    yt: "past simple english beginners", sp: "english podcast beginners stories"
+  },
   // ───────────────────────────── A2 ─────────────────────────────
   {
     id: "a2-1", level: "A2", title: "Daily routines",
@@ -597,6 +758,13 @@ window.DAY_PLAN = [
 
 /* Recursos recomendados por nivel (enlaces de búsqueda para que nunca se rompan) */
 window.RESOURCES = {
+  A1: [
+    { t: "BBC Learning English – English for absolute beginners", y: "bbc learning english beginners", s: "" },
+    { t: "English with Lucy – inglés desde cero", y: "english with lucy beginner", s: "" },
+    { t: "Easy English (calle, subtitulado)", y: "easy english street interviews", s: "" },
+    { t: "Podcasts de inglés para principiantes", y: "", s: "english podcast for beginners" },
+    { t: "Peppa Pig en inglés (frases simples, ideal para empezar)", y: "peppa pig english full episodes", s: "" }
+  ],
   A2: [
     { t: "BBC Learning English – 6 Minute English", y: "bbc learning english 6 minute english", s: "6 Minute English" },
     { t: "Easy English (calle, subtitulado)", y: "easy english street interviews", s: "" },

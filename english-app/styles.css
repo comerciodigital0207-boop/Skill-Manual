@@ -135,3 +135,11 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
   .grade { grid-template-columns: 1fr 1fr; }
   h1 { font-size: 1.3rem; }
 }
+.sound { background: var(--mid-soft); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.model { background: var(--good-soft); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.model p { margin: 6px 0; }
+.routine { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+.rblock { text-decoration: none; display: flex; gap: 8px; align-items: flex-start; text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 12px; padding: 10px; font: inherit; cursor: pointer; }
+.rblock .ri { font-size: 1.3rem; }
+.rblock.done { border-color: var(--good); background: var(--good-soft); }
+@media (max-width: 480px) { .routine { grid-template-columns: 1fr; } }

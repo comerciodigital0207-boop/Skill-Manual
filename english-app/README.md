@@ -1,9 +1,9 @@
-# 🇬🇧 English Coach — de A2 a C1
+# 🇬🇧 English Coach — de A1 a C1
 
-App web instalable (PWA) en español para estudiar inglés todos los días, con un plan que va de **A2 a C1**.
+App web instalable (PWA) en español para estudiar inglés todos los días, con un plan que va desde cero (**A1**) hasta **C1**.
 
 ## Qué hace
-- **Test de nivel** al empezar y plan de 32 unidades (A2, B1, B2, C1) × 5 clases: Aprende → Practica → Escucha → Habla → Evalúa.
+- **Opción de empezar desde cero** o test de nivel, y plan de 40 unidades (A1, A2, B1, B2, C1) × 5 clases: Aprende → Practica → Escucha → Habla → Evalúa.
 - **Hoy**: qué hiciste ayer, calentamiento con lo de ayer, siguiente clase, tareas pendientes, tarjetas por repasar y dónde reforzar.
 - **Repaso inteligente** (repetición espaciada) con el vocabulario y tus propios errores.
 - **Tareas** de escritura con fecha de entrega y corrección (automática o con profesor IA).
@@ -22,3 +22,9 @@ En **Ajustes** pega una API key de Claude (console.anthropic.com) para obtener c
 feedback de speaking y conversación por voz. La key se guarda solo en tu navegador. Sin key, todo lo demás funciona.
 
 Los datos se guardan en el dispositivo (usa Exportar/Importar para pasarlos a otro).
+
+## El método (rutina diaria de 30 min)
+1. **Repaso** (5 min): tarjetas de lo de ayer, en voz alta.
+2. **Clase** (10-15 min): un paso del plan, con frases completas y pronunciación tipo nativo.
+3. **Escucha real** (10 min): video o podcast del tema, repitiendo frases (shadowing).
+4. **Habla** (5 min): primero repites una respuesta modelo, luego la dices con tu propia vida.
