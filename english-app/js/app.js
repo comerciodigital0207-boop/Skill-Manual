@@ -743,8 +743,56 @@
   function afterClassRender() { /* hook para futuras animaciones */ }
 
   // ───────────────────────── REPASO (SRS) ─────────────────────────
+  function reviewTabs() {
+    const n = dueCards().length, total = Object.keys(S.cards).length, tab = ctx.tab || "today";
+    return `<div class="tabs" role="tablist">
+      <button class="${tab === "today" ? "on" : ""}" data-action="tab" data-tab="today">🔁 Repasar hoy <span class="pill">${n}</span></button>
+      <button class="${tab === "vocab" ? "on" : ""}" data-action="tab" data-tab="vocab">🗂 Mi vocabulario <span class="pill">${total}</span></button></div>`;
+  }
+  function cardStatus(c) {
+    if (c.box >= 4) return ["good", "Dominada"];
+    if (c.box === 0 && !c.seen) return ["", "Nueva"];
+    return ["mid", "Aprendiendo"];
+  }
+  function viewVocab() {
+    const f = ctx.vfilter || "all";
+    const all = Object.values(S.cards);
+    const filters = [["all", "Todas"], ["learning", "Por dominar"], ["mastered", "Dominadas"], ["mistakes", "Mis errores"], ["mine", "Mis palabras"]];
+    const pass = (c) => f === "all" ? true : f === "mastered" ? c.box >= 4 : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? c.unitId === "custom" : true;
+    const list = all.filter(pass);
+    const groups = {};
+    list.forEach((c) => { (groups[c.unitId] = groups[c.unitId] || []).push(c); });
+    const order = Object.keys(groups).sort((a, b) => (a === "custom" ? -1 : b === "custom" ? 1 : unitIndex(b) - unitIndex(a)));
+    const fmt = (d) => d <= today() ? "hoy" : d === addDays(today(), 1) ? "mañana" : new Date(d + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" });
+    return `<section class="card">
+      <div class="vstats"><div><b>${all.length}</b><span>tarjetas</span></div><div><b>${all.filter((c) => c.box >= 4).length}</b><span>dominadas</span></div><div><b>${all.filter((c) => c.box < 4).length}</b><span>por dominar</span></div><div><b>${all.filter((c) => c.mistake).length}</b><span>errores</span></div></div>
+      <input id="vsearch" type="search" placeholder="Buscar en inglés o en español…" autocomplete="off">
+      <div class="row">${filters.map(([k, n]) => `<button class="chip-btn ${f === k ? "" : "ghost"}" data-action="vfilter" data-f="${k}">${n}</button>`).join("")}</div>
+      ${list.length && f !== "mastered" ? `<button class="btn small" data-action="studyFiltered">▶ Repasar estas ${list.length} ahora</button>` : ""}
+    </section>
+    <details class="card addword"><summary><b>➕ Agregar mi propia palabra o frase</b></summary>
+      <form data-form="addCard" class="addform">
+        <label>En inglés<input name="en" required placeholder="Ej: I'm looking forward to it"></label>
+        <label>En español<input name="es" required placeholder="Ej: tengo muchas ganas"></label>
+        <label>Ejemplo (opcional)<input name="ex" placeholder="Ej: The trip? I'm looking forward to it!"></label>
+        <button class="btn primary">Guardar tarjeta</button></form></details>
+    ${list.length ? order.map((id) => { const u = C[unitIndex(id)];
+      return `<section class="card vgroup"><h3>${id === "custom" ? "✍️ Mis palabras" : `${u.level} · ${esc(u.title)}`} <span class="muted">(${groups[id].length})</span></h3>
+        ${groups[id].map((c) => { const [k, label] = cardStatus(c);
+          return `<div class="vrow" data-search="${esc((c.en + " " + c.es + " " + (c.ex || "")).toLowerCase())}">
+            <button class="icon" data-action="say" data-text="${esc(c.en + (c.ex ? ". " + c.ex : ""))}" aria-label="Escuchar">🔊</button>
+            <div class="vtext"><b>${esc(c.en)}</b> <span class="muted">— ${esc(c.es)}</span>${c.ex ? `<div class="ex">${esc(c.ex)}</div>` : ""}</div>
+            <div class="vmeta"><span class="pill ${k}">${c.mistake ? "Error · " : ""}${label}</span><span class="muted">Repaso: ${fmt(c.due)}</span>
+            ${c.unitId === "custom" || c.mistake ? `<button class="link small" data-action="delCard" data-id="${esc(c.id)}">Quitar</button>` : ""}</div>
+          </div>`; }).join("")}</section>`; }).join("")
+      : `<section class="card"><p>${all.length ? "No hay tarjetas con este filtro." : "Todavía no tienes tarjetas. Se crean solas al terminar la clase “Aprende” de cada unidad, y también puedes agregar las tuyas."}</p></section>`}`;
+  }
   function viewReview() {
     if (ctx.warm) return viewWarmup();
+    if ((ctx.tab || "today") === "vocab") return reviewTabs() + viewVocab();
+    return reviewTabs() + viewReviewToday();
+  }
+  function viewReviewToday() {
     const due = dueCards();
     if (!due.length) {
       const total = Object.keys(S.cards).length;
@@ -974,6 +1022,17 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
+      case "tab": ctx.tab = el.dataset.tab; ctx.flip = false; render(); break;
+      case "vfilter": ctx.vfilter = el.dataset.f; render(); break;
+      case "studyFiltered": {
+        const f = ctx.vfilter || "all"; let n = 0;
+        Object.values(S.cards).forEach((c) => { const ok = f === "all" ? true : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? c.unitId === "custom" : c.box >= 4; if (ok && c.due > today()) { c.due = today(); n++; } });
+        save(); ctx.tab = "today"; render(); toast(n ? `${n} tarjetas añadidas al repaso de hoy` : "Ya estaban en tu repaso de hoy"); break;
+      }
+      case "delCard": {
+        if (ctx.confirmDel !== el.dataset.id) { ctx.confirmDel = el.dataset.id; el.textContent = "¿Seguro? Toca otra vez"; break; }
+        delete S.cards[el.dataset.id]; ctx.confirmDel = null; save(); rerenderKeepScroll(); toast("Tarjeta quitada"); break;
+      }
       case "drillReveal": { const d = ctx.drill; d.phase = "reveal"; speak(d.queue[d.i].en); rerenderKeepScroll(); break; }
       case "drillGrade": {
         const d = ctx.drill; const it = d.queue[d.i]; const ok = el.dataset.ok === "1";
@@ -1152,6 +1211,11 @@ Usa exactamente estas secciones:
   });
   document.addEventListener("input", (e) => {
     if (e.target.name === "text" && $("#wc")) $("#wc").textContent = words(e.target.value).length + " palabras";
+    if (e.target.id === "vsearch") {
+      const q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll(".vrow").forEach((r) => { r.hidden = !!q && !r.dataset.search.includes(q); });
+      document.querySelectorAll(".vgroup").forEach((g) => { g.hidden = !!q && !g.querySelector(".vrow:not([hidden])"); });
+    }
   });
 
   document.addEventListener("submit", async (e) => {
@@ -1193,6 +1257,13 @@ Usa exactamente estas secciones:
       record(u.id, "writing", (r.score || 0) >= 7);
       dayLog().minutes += 20; touchStreak(); save();
       out.innerHTML = md(r.text); e.submitter.disabled = false; toast("Tarea revisada ✔"); return;
+    }
+    if (kind === "addCard") {
+      const en = (fd.get("en") || "").trim(), es = (fd.get("es") || "").trim();
+      if (!en || !es) return;
+      const id = "custom:" + en.toLowerCase().slice(0, 60);
+      S.cards[id] = { id, en, es, ex: (fd.get("ex") || "").trim(), unitId: "custom", box: 0, due: today() };
+      save(); ctx.vfilter = "mine"; render(); toast("Tarjeta guardada: la repasarás hoy"); return;
     }
     if (kind === "typedSpeak") {
       const st = ctx.sp[f.dataset.id]; st.text = (fd.get("t") || "").trim(); st.secs = 0; st.feedback = ""; st.typed = true;

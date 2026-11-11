@@ -181,3 +181,20 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .g-D, .g-F { background: var(--bad-soft); color: var(--bad); }
 .teacher-verdict { font-style: italic; margin-top: 10px; }
 .lock { background: var(--mid-soft); }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 4px; }
+.tabs button { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; padding: 10px 6px; border-radius: 10px; cursor: pointer; }
+.tabs button.on { background: var(--primary-soft); color: var(--primary); }
+.vstats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; margin-bottom: 10px; }
+.vstats div { background: var(--bg); border-radius: 10px; padding: 8px 4px; display: flex; flex-direction: column; }
+.vstats b { font-size: 1.3rem; color: var(--primary); font-variant-numeric: tabular-nums; }
+.vstats span { font-size: .78rem; color: var(--muted); }
+.vrow { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+.vrow:last-child { border-bottom: 0; }
+.vtext { min-width: 0; overflow-wrap: anywhere; }
+.vmeta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: .8rem; text-align: right; }
+.vgroup h3 { margin-top: 0; }
+.addword summary { padding: 2px 0; }
+.addform label { margin: 8px 0; }
+.link.small { font-size: .8rem; padding: 0; }
+@media (max-width: 480px) { .vrow { grid-template-columns: auto 1fr; } .vmeta { grid-column: 2; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px; } }
+[hidden] { display: none !important; }
