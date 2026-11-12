@@ -350,3 +350,5 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .msg .tr summary { cursor: pointer; color: var(--primary); font-size: .85rem; margin-top: 4px; }
 .lifelines summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .chat-form input { min-width: 0; }
+.chat-end { background: var(--good-soft); border-radius: 12px; padding: 12px; margin: 8px 0; }
+.chat-end h3 { margin: 0 0 6px; color: var(--good); }

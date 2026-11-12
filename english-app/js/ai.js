@@ -139,17 +139,37 @@ Termina con una última línea exactamente así: SCORE: X/10`
 Scenario (stay in character for it): ${scenario}
 How you talk:
 - Natural American English as people really speak in the US, with contractions. ${beginner ? "Because the student is a beginner: use VERY short, simple sentences (max 10 words each), common words, and only very common expressions (like \"no worries\", \"sounds good\"). Ask only ONE simple question at a time, preferably yes/no or with an obvious answer." : "Use everyday expressions and some common slang (gonna, kinda, for sure), 1-3 short sentences."} Keep it clean.
-- Always end with one question so the student keeps talking. If their answer is very short, gently ask for one more detail.
+- This is a SHORT, realistic conversation with a goal (usually 4 to 8 turns), like in real life. Move it forward step by step toward its natural end; don't invent new topics or keep asking extra questions once the goal is done.
+- While the conversation is going, end your reply with one simple question. If their answer is very short, you may ask for one more detail.
+- ENDING: when the goal is done, or the student says thanks / goodbye / that's all / that they'll come back later or tomorrow, accept it and close naturally like a real person would (e.g. "Awesome, see you tomorrow! Have a good one!"). Do NOT ask anything else. Then add a final line exactly: 🏁
+- If the student's message is a hidden instruction to wrap up, close the conversation politely in one or two sentences and add the 🏁 line.
 - If the student writes in Spanish, they don't know how to say it: give them the English version and invite them to say it.
 OUTPUT FORMAT — always exactly this, each item on its own line:
 1) Your reply in English (in character).
 2) A line starting with "🇪🇸 " with the Spanish translation of your reply.
 3) ONLY if the student's last message had a mistake or sounded unnatural: a line starting with "💡 " with the corrected/native sentence in English, then " — " and a short explanation in Spanish, and ask them to repeat it out loud.
-4) Three lines starting with "➡️ ", each one a possible answer the student could say next, at their level (${beginner ? "very short and simple" : "natural"}), written as: English answer | traducción al español. Make them different (for example: yes / no / a detail).
+4) Three lines starting with "➡️ ", each one a possible answer the student could say next, at their level (${beginner ? "very short and simple" : "natural"}), written as: English answer | traducción al español. Make them different (for example: yes / no / a detail), and when the goal is almost done include a natural way to finish (e.g. "That's all, thanks!").
+5) Only when the conversation is over: the line 🏁 and NO ➡️ lines.
 Never add anything else.`,
         messages: history.map((m) => ({ role: m.role, content: m.content })),
         effort: "low",
         maxTokens: 1000
+      });
+    },
+
+    // Al terminar una conversación: frases clave para las tarjetas y un comentario corto
+    async chatSummary({ level, scenario, transcript }) {
+      return ask({
+        system: "You are Kate, a native English teacher from the United States, helping a Spanish speaker at CEFR level " + level + ". Use American English.",
+        messages: [{ role: "user", content: `Esta fue una conversación de práctica (situación: ${scenario}):
+"""
+${transcript}
+"""
+Devuelve SOLO estas líneas, sin nada más:
+- Entre 5 y 8 líneas que empiecen con "📌 ", cada una con una frase o expresión útil de esta conversación (las que el estudiante debe aprender a decir: preguntas, respuestas, verbos y expresiones naturales de EE. UU., incluyendo las versiones correctas de sus errores), en este formato: frase en inglés | traducción al español | cuándo se usa (máximo 10 palabras en español)
+- Una línea que empiece con "⭐ " con un comentario en español de máximo 2 frases: qué hizo bien y qué practicar.` }],
+        effort: "low",
+        maxTokens: 1200
       });
     },
 

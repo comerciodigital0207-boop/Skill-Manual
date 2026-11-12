@@ -259,7 +259,7 @@
   }
   function dayXP(l) {
     if (!l) return 0;
-    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15 + (l.scenes || 0) * 15;
+    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15 + (l.scenes || 0) * 15 + (l.convs || 0) * 15;
   }
   function weekStats(offset = 0) {
     const start = (S.profile && S.profile.created) || today();
@@ -555,6 +555,7 @@
     ["words100", "📚", "100 palabras", () => Object.keys(S.cards).length >= 100],
     ["words300", "🧠", "300 palabras", () => Object.keys(S.cards).length >= 300],
     ["mastered25", "💪", "25 palabras dominadas", () => Object.values(S.cards).filter((c) => c.box >= 4).length >= 25],
+    ["conv1", "💬", "Primera conversación con " + TEACHER, () => Object.values(S.log).some((l) => l.convs)],
     ["scene1", "🇺🇸", "Primera escena real", () => Object.keys(S.scenes || {}).length >= 1],
     ["scenes5", "🗽", "5 escenas reales", () => Object.keys(S.scenes || {}).length >= 5],
     ["scenesAll", "🌎", "Todas las escenas", () => Object.keys(S.scenes || {}).length >= SCENES().length],
@@ -1070,12 +1071,13 @@
   function viewVocab() {
     const f = ctx.vfilter || "all";
     const all = Object.values(S.cards);
-    const filters = [["all", "Todas"], ["learning", "Por dominar"], ["mastered", "Dominadas"], ["mistakes", "Mis errores"], ["mine", "Mis palabras"]];
-    const pass = (c) => f === "all" ? true : f === "mastered" ? c.box >= 4 : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? c.unitId === "custom" : true;
+    const filters = [["all", "Todas"], ["learning", "Por dominar"], ["mastered", "Dominadas"], ["mistakes", "Mis errores"], ["mine", "Conversaciones y mías"]];
+    const pass = (c) => f === "all" ? true : f === "mastered" ? c.box >= 4 : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? ["custom", "conv", "real"].includes(c.unitId) : true;
     const list = all.filter(pass);
     const groups = {};
     list.forEach((c) => { (groups[c.unitId] = groups[c.unitId] || []).push(c); });
-    const order = Object.keys(groups).sort((a, b) => (a === "custom" ? -1 : b === "custom" ? 1 : unitIndex(b) - unitIndex(a)));
+    const rank = (g) => ({ conv: -3, real: -2, custom: -1 }[g] || 0);
+    const order = Object.keys(groups).sort((a, b) => rank(a) - rank(b) || unitIndex(b) - unitIndex(a));
     const fmt = (d) => d <= today() ? "hoy" : d === addDays(today(), 1) ? "mañana" : new Date(d + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" });
     return `<section class="card">
       <div class="vstats"><div><b>${all.length}</b><span>tarjetas</span></div><div><b>${all.filter((c) => c.box >= 4).length}</b><span>dominadas</span></div><div><b>${all.filter((c) => c.box < 4).length}</b><span>por dominar</span></div><div><b>${all.filter((c) => c.mistake).length}</b><span>errores</span></div></div>
@@ -1090,14 +1092,15 @@
         <label>Ejemplo (opcional)<input name="ex" placeholder="Ej: The trip? I'm looking forward to it!"></label>
         <button class="btn primary">Guardar tarjeta</button></form></details>
     ${list.length ? order.map((id) => { const u = C[unitIndex(id)];
-      return `<section class="card vgroup"><h3>${id === "custom" ? "✍️ Mis palabras" : `${u.level} · ${esc(u.title)}`} <span class="muted">(${groups[id].length})</span></h3>
+      const special = { custom: "✍️ Mis palabras", conv: "💬 De mis conversaciones con " + TEACHER, real: "🇺🇸 De la vida real (escenas)" };
+      return `<section class="card vgroup"><h3>${special[id] || (u ? `${u.level} · ${esc(u.title)}` : esc(id))} <span class="muted">(${groups[id].length})</span></h3>
         ${groups[id].map((c) => { const [k, label] = cardStatus(c);
           return `<div class="vrow" data-search="${esc((c.en + " " + c.es + " " + (c.ex || "")).toLowerCase())}">
             <button class="icon" data-action="say" data-text="${esc(c.en + (c.ex ? ". " + c.ex : ""))}" aria-label="Escuchar">🔊</button>
             <div class="vtext"><b>${esc(c.en)}</b> <span class="muted">— ${esc(c.es)}</span>${c.ex ? `<div class="ex">${esc(c.ex)}</div>` : ""}
               ${(() => { const cx = vocabContext(c.unitId, c.en); return cx ? `<details class="mini-ctx"><summary>Ver contexto</summary>${contextHTML(cx)}</details>` : ""; })()}</div>
             <div class="vmeta"><span class="pill ${k}">${c.mistake ? "Error · " : ""}${label}</span><span class="muted">Repaso: ${fmt(c.due)}</span>
-            ${c.unitId === "custom" || c.mistake ? `<button class="link small" data-action="delCard" data-id="${esc(c.id)}">Quitar</button>` : ""}</div>
+            ${["custom", "conv", "real"].includes(c.unitId) || c.mistake ? `<button class="link small" data-action="delCard" data-id="${esc(c.id)}">Quitar</button>` : ""}</div>
           </div>`; }).join("")}</section>`; }).join("")
       : `<section class="card"><p>${all.length ? "No hay tarjetas con este filtro." : "Todavía no tienes tarjetas. Se crean solas al terminar la clase “Aprende” de cada unidad, y también puedes agregar las tuyas."}</p></section>`}`;
   }
@@ -1218,11 +1221,20 @@ SCORE: ${score}/10`;
     { en: "Talking with a friend about a TV show you both watched.", es: "Hablar de una serie con una amiga", icon: "📺", goal: "Decir qué viste, si te gustó y por qué.", starters: [["I watched a really good show.", "Vi una serie muy buena."], ["It's about…", "Se trata de…"], ["I loved it!", "¡Me encantó!"], ["You have to watch it!", "¡Tienes que verla!"]] }
   ];
   const LIFELINES = [["Sorry, I don't understand.", "Perdón, no entiendo."], ["Can you say that again, please?", "¿Puedes repetirlo, por favor?"], ["Can you speak more slowly?", "¿Puedes hablar más despacio?"], ["How do you say … in English?", "¿Cómo se dice … en inglés?"], ["What does … mean?", "¿Qué significa …?"], ["Give me a second.", "Dame un segundo."]];
+  // Guarda una frase en las tarjetas (no duplica). group: "conv" (conversaciones) | "real" (vida real) | "custom"
+  function addCard(group, en, es, ex) {
+    en = (en || "").trim(); es = (es || "").trim(); if (!en || !es) return false;
+    const id = group + ":" + en.toLowerCase().replace(/[^a-z0-9' ]/g, "").slice(0, 60);
+    if (S.cards[id]) return false;
+    S.cards[id] = { id, en, es, ex: ex || "", unitId: group, box: 0, due: addDays(today(), 1) };
+    return true;
+  }
   // Separa el mensaje de Kate en: inglés, traducción, corrección y respuestas sugeridas
   function parseKate(text) {
     const out = { en: [], es: "", tip: "", options: [] };
     text.split("\n").map((l) => l.trim()).filter(Boolean).forEach((l) => {
-      if (l.startsWith("🇪🇸")) out.es = l.replace(/^🇪🇸\s*/, "");
+      if (l.startsWith("🏁")) out.end = true;
+      else if (l.startsWith("🇪🇸")) out.es = l.replace(/^🇪🇸\s*/, "");
       else if (l.startsWith("💡")) out.tip = l.replace(/^💡\s*/, "");
       else if (l.startsWith("➡️") || l.startsWith("➡")) { const [en, es] = l.replace(/^➡️?\s*/, "").split("|").map((x) => x.trim()); if (en) out.options.push([en, es || ""]); }
       else out.en.push(l.replace(/^\d\)\s*/, ""));
@@ -1263,7 +1275,8 @@ SCORE: ${score}/10`;
           <div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}" aria-label="Escuchar">🔊</button> ${esc(l.en)}${st.es ? `<div class="muted">${esc(l.es)}</div>` : ""}${l.spoken && st.es ? `<div class="muted">Dicho completo: ${esc(l.spoken)}</div>` : ""}</div></div>`).join("")}</div>
         <h3>Expresiones nativas de esta escena</h3>
         <div class="exprs">${sc.expressions.map(([e, m]) => `<div><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> <b>${esc(e)}</b> <span class="muted">— ${esc(m)}</span></div>`).join("")}</div>
-        <button class="btn small" data-action="addSceneCards" data-id="${sc.id}">➕ Agregar estas expresiones a mis tarjetas</button>` : ""}
+        <button class="btn small" data-action="addSceneCards" data-id="${sc.id}">➕ Agregar estas expresiones a mis tarjetas</button>
+        <p class="muted">Al terminar la escena, estas expresiones y tus frases se guardan solas en tus tarjetas.</p>` : ""}
         <button class="btn big" data-action="sceneMode" data-m="quiz">Siguiente: 2. Entiende →</button>`;
     } else if (st.mode === "quiz") {
       const answered = Object.keys(st.quiz).length;
@@ -1345,18 +1358,24 @@ SCORE: ${score}/10`;
     return `<section class="card"><div class="row between"><h2>${sc.icon} ${esc(sc.es)}</h2><button class="link small" data-action="resetChat">Cambiar situación</button></div>
       <p class="muted">🎯 ${esc(sc.goal)}</p>
       <div class="chat" id="chat">${msgs.map((m) => {
-        if (m.role === "user") return `<div class="msg user">${esc(m.content)}</div>`;
+        if (m.role === "user") return `<div class="msg user">${esc(m.content.split("\n(Note for Kate")[0])}</div>`;
         const k = parseKate(m.content);
         return `<div class="msg assistant"><div><button class="icon" data-action="say" data-text="${esc(k.en)}" aria-label="Escuchar">🔊</button> ${esc(k.en)}</div>
           ${k.es ? `<details class="tr"><summary>🇪🇸 Ver en español</summary>${esc(k.es)}</details>` : ""}
           ${k.tip ? `<div class="kate-tip">💡 ${esc(k.tip)}</div>` : ""}</div>`;
       }).join("")}${ctx.chatBusy ? `<div class="msg assistant muted">${TEACHER} está escribiendo…</div>` : ""}</div>
-      ${lastK && lastK.options.length && !ctx.chatBusy ? `<div class="sugg-box"><b>¿Qué puedes responder?</b> <span class="muted">Toca una, escúchala, <b>dila en voz alta</b> y envíala (o cámbiala a tu gusto).</span>
+      ${chat.ended ? `<div class="chat-end">${ctx.chatBusy ? `<p class="muted">${TEACHER} está preparando tu resumen…</p>` : `<h3>🏁 Conversación terminada</h3>
+          ${chat.summary && chat.summary.note ? `<p>👩‍🏫 ${esc(chat.summary.note)}</p>` : ""}
+          ${chat.summary && chat.summary.items.length ? `<p><b>Frases para repasar</b> (ya están en tus tarjetas 🗂):</p>
+          <div class="chips-col">${chat.summary.items.map(([en, es, when]) => `<div class="starter"><button class="icon" data-action="say" data-text="${esc(en)}" aria-label="Escuchar">🔊</button><div><b>${esc(en)}</b><div class="muted">${esc(es)}${when ? " · " + esc(when) : ""}</div></div></div>`).join("")}</div>` : ""}
+          <div class="row"><button class="btn primary" data-action="restartChat">🔁 Repetir esta conversación</button><button class="btn" data-action="resetChat">Otra situación</button></div>`}</div>` : ""}
+      ${!chat.ended && lastK && lastK.options.length && !ctx.chatBusy ? `<div class="sugg-box"><b>¿Qué puedes responder?</b> <span class="muted">Toca una, escúchala, <b>dila en voz alta</b> y envíala (o cámbiala a tu gusto).</span>
         <div class="chips-col">${lastK.options.map(([en, es]) => `<button class="sugg" data-action="useSugg" data-text="${esc(en)}"><b>${esc(en)}</b><span>${esc(es)}</span></button>`).join("")}</div></div>` : ""}
-      <form data-form="chat" class="row chat-form"><input name="m" id="chatInput" placeholder="Escribe en inglés (o en español si no sabes cómo decirlo)" autocomplete="off">
+      ${chat.ended ? "" : `<form data-form="chat" class="row chat-form"><input name="m" id="chatInput" placeholder="Escribe en inglés (o en español si no sabes cómo decirlo)" autocomplete="off">
         ${micMode() === "yes" ? `<button type="button" class="btn small" data-action="chatMic">${ctx.recording === "chat" ? "⏹" : "🎙"}</button>` : ""}<button class="btn small primary">Enviar</button></form>
       <p class="muted">💬 ¿No sabes cómo decir algo? <b>Escríbelo en español</b> y ${TEACHER} te enseña cómo se dice en inglés.${micMode() === "no" ? " (El micrófono no funciona aquí: dicta con el 🎤 del teclado del celular.)" : ""}</p>
       ${lifelines}
+      <button class="btn small" data-action="endChat">🏁 Terminar la conversación</button>`}
     </section>`;
   }
 
@@ -1524,7 +1543,7 @@ Usa exactamente estas secciones, cortas y claras:
       case "sceneRestart": ctx.sc.i = 0; ctx.sc.ok = 0; ctx.sc.phase = "prompt"; ctx.sc.finished = false; afterSceneStep(); break;
       case "addSceneCards": {
         const sc = SCENES().find((x) => x.id === el.dataset.id); let n = 0;
-        sc.expressions.forEach(([e, m]) => { const id = "native:" + e.toLowerCase(); if (!S.cards[id]) { S.cards[id] = { id, en: e, es: m, ex: "", unitId: "custom", box: 0, due: today() }; n++; } });
+        sc.expressions.forEach(([e, m]) => { if (addCard("real", e, m, "📍 " + sc.title)) n++; });
         save(); toast(n ? `${n} expresiones agregadas a tus tarjetas` : "Ya estaban en tus tarjetas"); break;
       }
       case "addReductions": {
@@ -1550,7 +1569,7 @@ Muestra cómo hablan de verdad en Estados Unidos sobre este tema, en lenguaje co
       case "vfilter": ctx.vfilter = el.dataset.f; render(); break;
       case "studyFiltered": {
         const f = ctx.vfilter || "all"; let n = 0;
-        Object.values(S.cards).forEach((c) => { const ok = f === "all" ? true : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? c.unitId === "custom" : c.box >= 4; if (ok && c.due > today()) { c.due = today(); n++; } });
+        Object.values(S.cards).forEach((c) => { const ok = f === "all" ? true : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? ["custom", "conv", "real"].includes(c.unitId) : c.box >= 4; if (ok && c.due > today()) { c.due = today(); n++; } });
         save(); ctx.tab = "today"; render(); toast(n ? `${n} tarjetas añadidas al repaso de hoy` : "Ya estaban en tu repaso de hoy"); break;
       }
       case "delCard": {
@@ -1704,8 +1723,10 @@ Usa exactamente estas secciones:
         ctx.freeUnit = pool[Math.floor(Math.random() * pool.length)].id; ctx.sp = {}; ctx.writeMode = {}; render(); break;
       }
       case "writeMode": { ctx.writeMode = ctx.writeMode || {}; ctx.writeMode[el.dataset.id] = el.dataset.on === "1"; stopRec(); ctx.recording = null; rerenderKeepScroll(); break; }
-      case "resetChat": ctx.chat.history = []; ctx.chatBusy = false; render(); break;
-      case "pickScen": ctx.chat.si = +el.dataset.i; ctx.chat.history = []; rerenderKeepScroll(); break;
+      case "resetChat": ctx.chat.history = []; ctx.chat.ended = false; ctx.chat.summary = null; ctx.chatBusy = false; render(); break;
+      case "pickScen": ctx.chat.si = +el.dataset.i; ctx.chat.history = []; ctx.chat.ended = false; ctx.chat.summary = null; rerenderKeepScroll(); break;
+      case "endChat": sendChat("(Wrap up now: the student wants to finish. Close the conversation naturally in character, one or two sentences, then the 🏁 line.)", true); break;
+      case "restartChat": ctx.chat.history = []; ctx.chat.ended = false; ctx.chat.summary = null; sendChat(`(The student is ready. Start the conversation in character with a short, friendly greeting and ONE easy question. Name: ${firstName()}.)`, true); break;
       case "startChat": sendChat(`(The student is ready. Start the conversation in character with a short, friendly greeting and ONE easy question. Name: ${firstName()}.)`, true); break;
       case "useSugg": { const inp = $("#chatInput"); speak(el.dataset.text); if (inp) { inp.value = el.dataset.text; inp.focus(); } else toast("Primero toca “Empezar”"); break; }
       case "chatMic": {
@@ -1735,6 +1756,8 @@ Usa exactamente estas secciones:
       const score = Math.round((st.ok / Math.max(1, mine)) * 100);
       S.scenes = S.scenes || {};
       S.scenes[sc.id] = { date: today(), score: Math.max(score, (S.scenes[sc.id] || {}).score || 0) };
+      sc.expressions.forEach(([e, m]) => addCard("real", e, m, "📍 " + sc.title));
+      sc.lines.filter((l) => l[0] === "Tú").forEach((l) => addCard("real", sceneText(l[1]), sceneText(l[2]), "📍 " + sc.title));
       const xpBefore = dayXP(S.log[today()]);
       const lg = dayLog(); lg.scenes = (lg.scenes || 0) + 1; touchStreak(); save();
       setTimeout(() => celebrate({ icon: sc.icon, title: "¡Escena completada!", sub: `${sc.title}: ${score}% a la primera.`, xpBefore, closeLabel: "Ver mi resultado" }), 50);
@@ -1747,6 +1770,8 @@ Usa exactamente estas secciones:
 
   async function sendChat(text, hidden) {
     const chat = ctx.chat; if (!text.trim() || ctx.chatBusy) return;
+    const turns = chat.history.filter((m) => m.role === "user" && !m.hidden).length;
+    if (!hidden && turns >= 9) text = text.trim() + "\n(Note for Kate: this conversation is long enough. Reply to this, then close it naturally and add the 🏁 line.)";
     chat.history.push({ role: "user", content: text.trim(), hidden: !!hidden });
     ctx.chatBusy = true; render(); scrollChat();
     try {
@@ -1754,8 +1779,36 @@ Usa exactamente estas secciones:
       chat.history.push({ role: "assistant", content: reply });
       if (!hidden) dayLog().speakingWords += words(text).length;
       touchStreak(); save();
-      ctx.chatBusy = false; render(); speak(parseKate(reply).en); scrollChat();
+      const k = parseKate(reply);
+      if (k.tip) { const [fix, why] = k.tip.split(" — "); addCard("conv", fix.replace(/[“”"]/g, ""), why ? "✔ forma correcta: " + why.slice(0, 120) : "forma correcta"); save(); }
+      ctx.chatBusy = false; render(); speak(k.en); scrollChat();
+      if (k.end) finishChat();
     } catch (err) { chat.history.pop(); ctx.chatBusy = false; render(); toast(err.message); }
+  }
+  // Cierre: resumen, frases a las tarjetas y celebración
+  async function finishChat() {
+    const chat = ctx.chat; if (chat.ended) return;
+    chat.ended = true; chat.summary = null; ctx.chatBusy = true; render(); scrollChat();
+    const xpBefore = dayXP(S.log[today()]);
+    const sc = SCENARIOS[chat.si || 0];
+    const transcript = chat.history.filter((m) => !m.hidden).map((m) => (m.role === "user" ? "Student: " + m.content : "Kate: " + parseKate(m.content).en)).join("\n");
+    let items = [], note = "";
+    try {
+      const txt = await window.AI.chatSummary({ level: currentLevel(), scenario: sc.es, transcript });
+      txt.split("\n").map((l) => l.trim()).forEach((l) => {
+        if (l.startsWith("📌")) { const [en, es, when] = l.replace(/^📌\s*/, "").split("|").map((x) => (x || "").trim()); if (en && es) items.push([en, es, when || ""]); }
+        else if (l.startsWith("⭐")) note = l.replace(/^⭐\s*/, "");
+      });
+    } catch (err) { /* sin resumen: guardamos las frases sugeridas que usó */ }
+    if (!items.length) {
+      chat.history.filter((m) => m.role === "assistant").forEach((m) => parseKate(m.content).options.forEach(([en, es]) => items.push([en, es, sc.es])));
+      items = items.slice(0, 8);
+    }
+    let added = 0; items.forEach(([en, es, when]) => { if (addCard("conv", en, es, when ? "📍 " + when + " (" + sc.es + ")" : sc.es)) added++; });
+    const lg = dayLog(); lg.convs = (lg.convs || 0) + 1; touchStreak(); save();
+    chat.summary = { items, note, added };
+    ctx.chatBusy = false; render(); scrollChat();
+    celebrate({ icon: sc.icon, title: "¡Conversación completada!", sub: `${sc.es}. ${items.length} frases guardadas en tus tarjetas para repasar.`, xpBefore, closeLabel: "Ver mi resumen" });
   }
   function scrollChat() { const b = $("#chat"); if (b) b.scrollTop = b.scrollHeight; const f = $(".chat-form"); if (f) f.scrollIntoView({ block: "nearest" }); }
 
