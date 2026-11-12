@@ -46,15 +46,15 @@ window.CURRICULUM = [
     id: "a1-3", level: "A1", title: "Numbers & time",
     grammar: {
       name: "Question words: what, where, when, who, how much",
-      explain: "Las preguntas empiezan con la palabra interrogativa: <b>What</b> (qué), <b>Where</b> (dónde), <b>When</b> (cuándo), <b>Who</b> (quién), <b>How much</b> (cuánto cuesta). La hora: <i>It's seven o'clock / It's half past seven (7:30) / It's quarter to eight (7:45)</i>. Al hablar, los nativos dicen casi siempre <i>It's seven thirty</i>.",
+      explain: "Las preguntas empiezan con la palabra interrogativa: <b>What</b> (qué), <b>Where</b> (dónde), <b>When</b> (cuándo), <b>Who</b> (quién), <b>How much</b> (cuánto cuesta). La hora en inglés de EE. UU. se dice con los números seguidos: <i>It's seven (7:00) / It's seven-thirty (7:30) / It's seven forty-five (7:45)</i>. Para “en punto” se usa <i>o'clock</i> o nada.",
       examples: ["What time is it? — It's ten thirty.", "Where is the bathroom?", "How much is it? — It's five dollars.", "When is your birthday? — It's in May."]
     },
     sound: "Cuidado: <b>thirteen</b> (13, acento al final: thur-TÍIN) vs <b>thirty</b> (30, acento al inicio: THÚR-ti). Igual 14/40, 15/50.",
-    vocab: [["What time is it?", "¿qué hora es?", "Excuse me, what time is it?"], ["It's ... o'clock", "son las ... en punto", "It's three o'clock."], ["half past", "y media", "It's half past six."], ["How much is it?", "¿cuánto cuesta?", "How much is this coffee?"], ["Where is...?", "¿dónde está...?", "Where is the station?"], ["When", "cuándo", "When is the meeting?"], ["today / tomorrow", "hoy / mañana", "See you tomorrow."], ["morning / evening", "mañana / noche (tarde)", "Good morning!"]],
+    vocab: [["What time is it?", "¿qué hora es?", "Excuse me, what time is it?"], ["It's ... o'clock", "son las ... en punto", "It's three o'clock."], ["seven-thirty", "siete y media (7:30)", "It's six-thirty."], ["How much is it?", "¿cuánto cuesta?", "How much is this coffee?"], ["Where is...?", "¿dónde está...?", "Where is the station?"], ["When", "cuándo", "When is the meeting?"], ["today / tomorrow", "hoy / mañana", "See you tomorrow."], ["morning / evening", "mañana / noche (tarde)", "Good morning!"]],
     quiz: [
       { q: "___ is the bathroom?", o: ["What", "Where", "When", "Who"], a: 1 },
       { q: "___ is it? — It's 10 dollars.", o: ["How much", "How many", "What time", "Where"], a: 0 },
-      { q: "7:30 =", o: ["It's half past seven", "It's seven half", "It's thirty seven", "It's half to seven"], a: 0 },
+      { q: "7:30 =", o: ["It's seven-thirty", "It's seven half", "It's thirty seven", "It's half to seven"], a: 0 },
       { q: "30 se dice:", o: ["thirteen", "thirty", "three", "third"], a: 1 }
     ],
     speaking: "Say your phone number, what time you get up, what time you go to bed, and ask the price of 3 things.",
@@ -325,7 +325,7 @@ window.CURRICULUM = [
     ],
     speaking: "Tell a story about something unexpected that happened to you. Use 'while', 'when' and 'suddenly'.",
     writing: "Escribe una historia de 150 palabras que empiece con: 'It was a normal day until...'",
-    yt: "past continuous vs past simple storytelling", sp: "6 minute english bbc"
+    yt: "past continuous vs past simple storytelling", sp: "VOA learning english"
   },
   {
     id: "b1-2", level: "B1", title: "Recent news & changes",
@@ -343,7 +343,7 @@ window.CURRICULUM = [
     ],
     speaking: "What has changed in your life in the last year? What have you achieved so far and what haven't you done yet?",
     writing: "Escribe un email de 150 palabras a un amigo contándole las novedades de tu vida (usa for, since, just, already, yet).",
-    yt: "present perfect vs past simple for since yet already", sp: "bbc learning english news review"
+    yt: "present perfect vs past simple for since yet already", sp: "all ears english"
   },
   {
     id: "b1-3", level: "B1", title: "Possibilities & dreams",
@@ -415,7 +415,7 @@ window.CURRICULUM = [
     ],
     speaking: "Report a recent conversation you had with a friend, family member or colleague.",
     writing: "Escribe 150 palabras contando una conversación importante usando reported speech.",
-    yt: "reported speech english grammar lesson", sp: "the english we speak bbc"
+    yt: "reported speech english grammar lesson", sp: "american english podcast"
   },
   {
     id: "b1-7", level: "B1", title: "Likes, habits & decisions",
@@ -471,7 +471,7 @@ window.CURRICULUM = [
     ],
     speaking: "Talk about a decision that changed your life. What would have happened if you had chosen differently?",
     writing: "Escribe 180 palabras sobre una decisión importante y cómo sería tu vida si hubieras elegido distinto.",
-    yt: "third conditional mixed conditionals english", sp: "luke's english podcast"
+    yt: "third conditional mixed conditionals english", sp: "speak english with vanessa"
   },
   {
     id: "b2-2", level: "B2", title: "Speculation & deduction",
@@ -597,7 +597,7 @@ window.CURRICULUM = [
     ],
     speaking: "Report a meeting or argument you witnessed using at least 6 reporting verbs.",
     writing: "Escribe 200 palabras resumiendo una reunión o discusión usando reporting verbs (no uses 'said').",
-    yt: "reporting verbs english advanced", sp: "bbc news review podcast"
+    yt: "reporting verbs english advanced", sp: "NPR news now"
   },
 
   // ───────────────────────────── C1 ─────────────────────────────
@@ -623,12 +623,12 @@ window.CURRICULUM = [
     id: "c1-2", level: "C1", title: "Focusing information",
     grammar: {
       name: "Cleft sentences",
-      explain: "Para resaltar una parte: <b>It is/was ... that/who</b> (<i>It was Maria who called</i>) y <b>What ... is/was</b> (<i>What I need is a holiday</i>). También: <i>All I want is..., The thing that bothers me is..., The reason why... is that...</i>",
+      explain: "Para resaltar una parte: <b>It is/was ... that/who</b> (<i>It was Maria who called</i>) y <b>What ... is/was</b> (<i>What I need is a vacation</i>). También: <i>All I want is..., The thing that bothers me is..., The reason why... is that...</i>",
       examples: ["What I love about London is the diversity.", "It was in 2019 that I decided to move.", "All I want is a bit of peace.", "The reason why I'm late is that the train broke down."]
     },
     vocab: [["what I mean is", "lo que quiero decir es", "What I mean is..."], ["the thing is", "el asunto es", "The thing is, I'm busy."], ["all I need", "todo lo que necesito", "All I need is time."], ["it was ... that", "fue ... que", "It was you that helped me."], ["bother", "molestar", "What bothers me is..."], ["point out", "señalar", "I'd like to point out..."], ["highlight", "destacar", "I want to highlight..."], ["crucial", "crucial", "What's crucial is..."]],
     quiz: [
-      { q: "___ I really need is a long holiday.", o: ["That", "What", "It", "Which"], a: 1 },
+      { q: "___ I really need is a long vacation.", o: ["That", "What", "It", "Which"], a: 1 },
       { q: "It was my brother ___ broke the vase.", o: ["which", "who", "what", "whom"], a: 1 },
       { q: "All I want ___ to be happy.", o: ["are", "is", "be", "being"], a: 1 },
       { q: "___ was in Paris that they first met.", o: ["What", "There", "It", "This"], a: 2 }
@@ -671,7 +671,7 @@ window.CURRICULUM = [
     ],
     speaking: "Summarize a news story you read recently in under 90 seconds using participle clauses.",
     writing: "Reescribe un texto de 200 palabras (tuyo de unidades anteriores) haciéndolo más conciso con participle clauses.",
-    yt: "participle clauses english c1 advanced", sp: "the economist podcast"
+    yt: "participle clauses english c1 advanced", sp: "the daily new york times"
   },
   {
     id: "c1-5", level: "C1", title: "Sounding natural",
@@ -702,7 +702,7 @@ window.CURRICULUM = [
     quiz: [
       { q: "By 2030, I ___ my own business.", o: ["will start", "will have started", "will be starting", "start"], a: 1 },
       { q: "Don't call at 8. I ___ dinner.", o: ["will have", "will be having", "have had", "am about"], a: 1 },
-      { q: "Hurry up! The film is ___ start.", o: ["bound to", "about to", "due", "on the verge"], a: 1 },
+      { q: "Hurry up! The movie is ___ start.", o: ["bound to", "about to", "due", "on the verge"], a: 1 },
       { q: "With his talent, he's ___ succeed.", o: ["about to", "bound to", "due to", "verge to"], a: 1 }
     ],
     speaking: "Describe where you will be and what you will have achieved in 5 years. Be precise.",
@@ -743,7 +743,7 @@ window.CURRICULUM = [
     ],
     speaking: "Debate for 2 minutes: 'AI will create more jobs than it destroys.' Concede one point and refute it.",
     writing: "Escribe un ensayo argumentativo de 250 palabras sobre un tema polémico usando 6 expresiones de concesión y persuasión.",
-    yt: "how to debate in english advanced phrases", sp: "intelligence squared debates podcast"
+    yt: "how to debate in english advanced phrases", sp: "open to debate podcast"
   }
 ];
 
@@ -758,40 +758,41 @@ window.DAY_PLAN = [
 
 /* Recursos recomendados por nivel (enlaces de búsqueda para que nunca se rompan) */
 window.RESOURCES = {
+  // Solo inglés norteamericano (EE. UU.)
   A1: [
-    { t: "BBC Learning English – English for absolute beginners", y: "bbc learning english beginners", s: "" },
-    { t: "English with Lucy – inglés desde cero", y: "english with lucy beginner", s: "" },
-    { t: "Easy English (calle, subtitulado)", y: "easy english street interviews", s: "" },
-    { t: "Podcasts de inglés para principiantes", y: "", s: "english podcast for beginners" },
-    { t: "Peppa Pig en inglés (frases simples, ideal para empezar)", y: "peppa pig english full episodes", s: "" }
+    { t: "VOA Learning English – Let's Learn English (curso para principiantes, EE. UU.)", y: "VOA let's learn english level 1", s: "" },
+    { t: "English with Jennifer (profesora estadounidense, desde cero)", y: "english with jennifer beginner", s: "" },
+    { t: "Speak English with Tiffani (frases del día a día)", y: "speak english with tiffani beginner", s: "Speak English with Tiffani" },
+    { t: "Rachel's English (pronunciación americana)", y: "rachel's english pronunciation basics", s: "" },
+    { t: "Sesame Street (frases simples, inglés de EE. UU.)", y: "sesame street full episode", s: "" }
   ],
   A2: [
-    { t: "BBC Learning English – 6 Minute English", y: "bbc learning english 6 minute english", s: "6 Minute English" },
-    { t: "Easy English (calle, subtitulado)", y: "easy english street interviews", s: "" },
-    { t: "English with Lucy (gramática y pronunciación)", y: "english with lucy", s: "" },
-    { t: "VOA Learning English (noticias lentas)", y: "voa learning english", s: "VOA learning english" },
-    { t: "ESL Pod / English Learning podcasts para principiantes", y: "", s: "english podcast for beginners" }
+    { t: "VOA Learning English – Let's Learn English Level 2", y: "VOA let's learn english level 2", s: "VOA learning english" },
+    { t: "Speak English with Vanessa (inglés americano natural)", y: "speak english with vanessa", s: "Speak English with Vanessa" },
+    { t: "Go Natural English (expresiones de EE. UU.)", y: "go natural english", s: "" },
+    { t: "Rachel's English (cómo hablan los estadounidenses)", y: "rachel's english", s: "" },
+    { t: "Speak English with Tiffani – podcast diario", y: "", s: "Speak English with Tiffani" }
   ],
   B1: [
-    { t: "mmmEnglish (expresiones y pronunciación)", y: "mmmenglish", s: "" },
-    { t: "Speak English with Vanessa", y: "speak english with vanessa", s: "" },
-    { t: "BBC – The English We Speak", y: "bbc the english we speak", s: "The English We Speak" },
-    { t: "English Learning for Curious Minds", y: "", s: "English Learning for Curious Minds" },
-    { t: "Rachel's English (acento americano)", y: "rachel's english", s: "" }
+    { t: "All Ears English (podcast, conversación americana)", y: "all ears english", s: "All Ears English" },
+    { t: "Speak English with Vanessa – conversaciones reales", y: "speak english with vanessa conversation", s: "" },
+    { t: "Friends con subtítulos en inglés (serie de EE. UU.)", y: "friends best scenes english subtitles", s: "" },
+    { t: "Rachel's English – reducciones y habla rápida", y: "rachel's english reductions", s: "" },
+    { t: "VOA Learning English – noticias de EE. UU. lentas", y: "voa learning english news", s: "VOA learning english" }
   ],
   B2: [
-    { t: "Luke's English Podcast", y: "luke's english podcast", s: "Luke's English Podcast" },
     { t: "All Ears English", y: "all ears english", s: "All Ears English" },
+    { t: "Series de EE. UU.: Modern Family, The Office, Brooklyn Nine-Nine", y: "modern family funny scenes", s: "" },
     { t: "TED-Ed (temas variados, 5 min)", y: "TED-Ed", s: "" },
-    { t: "BBC News Review", y: "bbc news review learning english", s: "" },
-    { t: "Series con subtítulos en inglés: Friends, Modern Family, The Office", y: "learn english with tv series", s: "" }
+    { t: "This American Life (historias reales)", y: "", s: "This American Life" },
+    { t: "Jimmy Fallon / late shows (humor y conversación natural)", y: "jimmy fallon interview", s: "" }
   ],
   C1: [
-    { t: "TED Talks Daily", y: "TED talks", s: "TED Talks Daily" },
-    { t: "The Economist / The Daily (noticias reales)", y: "", s: "The Daily" },
+    { t: "The Daily – The New York Times", y: "", s: "The Daily" },
     { t: "Freakonomics Radio", y: "", s: "Freakonomics Radio" },
-    { t: "Intelligence Squared (debates)", y: "intelligence squared debate", s: "Intelligence Squared" },
-    { t: "Documentales y entrevistas sin subtítulos en español", y: "long form interview english", s: "" }
+    { t: "TED Talks Daily", y: "TED talks", s: "TED Talks Daily" },
+    { t: "Open to Debate (debates de EE. UU.)", y: "open to debate", s: "Open to Debate" },
+    { t: "NPR – noticias y entrevistas", y: "NPR interview", s: "NPR News Now" }
   ]
 };
 
@@ -838,3 +839,19 @@ window.SPEAKING_ES = {
   "c1-7": "Di el mismo mensaje dos veces: primero a un amigo (informal) y luego a un gerente de empresa (formal).",
   "c1-8": "Debate 2 minutos: 'La IA creará más empleos de los que destruye'. Concede un punto y refútalo."
 };
+
+/* Lo que puedes hacer al terminar cada unidad (se desbloquea en "Mi camino") */
+window.CAN_DO = {
+  "a1-1": "Presentarte y saludar como nativo", "a1-2": "Hablar de ti y de tu familia", "a1-3": "Preguntar precios, la hora y lugares", "a1-4": "Contar tu rutina diaria",
+  "a1-5": "Hablar de otras personas", "a1-6": "Pedir cosas y pedir ayuda", "a1-7": "Describir tu casa y tu barrio", "a1-8": "Contar qué hiciste ayer",
+  "a2-1": "Diferenciar lo que haces siempre de lo que haces ahora", "a2-2": "Contar historias del pasado", "a2-3": "Hablar de tus planes", "a2-4": "Comparar cosas y lugares",
+  "a2-5": "Comprar y pedir comida", "a2-6": "Hablar de tus experiencias de vida", "a2-7": "Dar consejos y hablar de reglas", "a2-8": "Dar y entender direcciones",
+  "b1-1": "Narrar historias con detalles", "b1-2": "Hablar de cambios y logros recientes", "b1-3": "Hablar de posibilidades y sueños", "b1-4": "Explicar cómo se hacen las cosas",
+  "b1-5": "Describir personas y lugares con detalle", "b1-6": "Contar lo que otros dijeron", "b1-7": "Hablar de gustos, hábitos y decisiones", "b1-8": "Comparar tu vida antes y ahora",
+  "b2-1": "Hablar de decisiones y arrepentimientos", "b2-2": "Especular y sacar conclusiones", "b2-3": "Hablar de experiencias a lo largo del tiempo", "b2-4": "Resolver trámites y servicios",
+  "b2-5": "Expresar deseos y quejas", "b2-6": "Usar phrasal verbs como un nativo", "b2-7": "Argumentar tu opinión", "b2-8": "Resumir reuniones y conversaciones",
+  "c1-1": "Contar historias con dramatismo", "c1-2": "Enfatizar lo que importa", "c1-3": "Hablar con diplomacia", "c1-4": "Hablar y escribir de forma concisa",
+  "c1-5": "Sonar natural con expresiones idiomáticas", "c1-6": "Hablar del futuro con precisión", "c1-7": "Cambiar entre registro formal e informal", "c1-8": "Debatir y persuadir"
+};
+// Los videos de cada tema se buscan en inglés americano
+(window.CURRICULUM || []).forEach((u) => { if (!/american/i.test(u.yt)) u.yt += " american english"; });

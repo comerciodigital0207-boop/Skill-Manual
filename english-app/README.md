@@ -1,4 +1,4 @@
-# 🇬🇧 English Coach — de A1 a C1
+# 🇺🇸 English Coach — de A1 a C1
 
 App web instalable (PWA) en español para estudiar inglés todos los días, con un plan que va desde cero (**A1**) hasta **C1**.
 
@@ -41,3 +41,10 @@ Los datos se guardan en el dispositivo (usa Exportar/Importar para pasarlos a ot
 - **Vida real en EE. UU.**: 10 escenas cotidianas (cafetería, vecino, supermercado, Uber, restaurante, mensajes, farmacia, trabajo, llamada, fiesta). En cada una: escuchar sin leer, preguntas de comprensión y role-play de tu papel en voz alta.
 - **Cómo suena de verdad**: reducciones del habla (gonna, wanna, gotta, kinda, lemme…).
 - El profesor de conversación habla en inglés casual de EE. UU. y te muestra cómo lo diría un nativo.
+
+## Inglés americano, sencillo y con avance visible
+- Todo el contenido usa **inglés de EE. UU.** (hora como “seven-thirty”, vacation, movie, check, farther) y recursos de profesores y medios estadounidenses.
+- **Inicio simple**: anillo de puntos del día y un solo botón **Continuar** que te lleva a lo siguiente que toca (repaso → clase → tarea → escena real).
+- **Celebración** al terminar cada actividad: puntos ganados, avance de la meta del día, logros nuevos y lo que ya puedes hacer.
+- **Mi camino**: mapa de unidades por nivel con lo que ya sabes hacer y lo próximo por desbloquear.
+- **Logros** (rachas, palabras, escenas, unidades, niveles).

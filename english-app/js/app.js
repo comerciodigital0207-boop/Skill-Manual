@@ -27,6 +27,7 @@
     unitScores: {},
     explanations: {},
     scenes: {},
+    badges: {},
     curriculumVersion: 2
   });
 
@@ -510,6 +511,94 @@
   }
 
   // ───────────────────────── HOY ─────────────────────────
+  // ¿Qué hago ahora? Una sola recomendación, en el orden del método
+  function nextActivity() {
+    const l = dayLog(); const due = dueCards().length; const u = curUnit(); const step = PLAN[S.progress.step];
+    if (overdueCards() >= LOCK_DUE || (due > 0 && !l.reviews)) return { icon: "🔁", label: `Repaso: ${due} tarjeta${due === 1 ? "" : "s"}`, why: "Primero repasas lo anterior para no olvidarlo. Son unos 5 minutos.", view: "review" };
+    if (!l.steps.length && !finished()) return { icon: step.icon, label: `Clase: ${u.title} · ${step.name}`, why: step.desc, view: "class" };
+    const hw = S.homework.find((h) => h.status === "pending" && h.due <= today());
+    if (hw) return { icon: "📝", label: "Entregar tu tarea", why: "Tienes una tarea que vence hoy o ya venció.", view: "homework", extra: { hwId: hw.id } };
+    if (!l.scenes) {
+      const lv = LEVELS.indexOf(currentLevel());
+      const sc = SCENES().find((x) => !(S.scenes || {})[x.id] && LEVELS.indexOf(x.level) <= lv + 1) || SCENES()[0];
+      if (sc) return { icon: sc.icon, label: `Vida real: ${sc.title}`, why: "Escucha y actúa una situación real en EE. UU. (5 minutos).", view: "speaking", extra: { stab: "real", sceneId: sc.id } };
+    }
+    if (!finished() && dayXP(l) < DAILY_XP) return { icon: step.icon, label: `Clase: ${u.title} · ${step.name}`, why: "Sigue avanzando hasta tu meta de " + DAILY_XP + " ⚡.", view: "class" };
+    return { icon: "🏆", label: "¡Meta cumplida! ¿Una clase más?", why: "Ya cumpliste hoy. Todo lo que hagas extra suma.", view: finished() ? "speaking" : "class" };
+  }
+  function ring(value, max, label) {
+    const r = 34, c = 2 * Math.PI * r, p = Math.min(1, value / max);
+    return `<svg class="ring" viewBox="0 0 84 84" role="img" aria-label="${esc(label)}"><circle cx="42" cy="42" r="${r}" class="ring-bg"/>
+      <circle cx="42" cy="42" r="${r}" class="ring-fg ${p >= 1 ? "full" : ""}" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p)}" transform="rotate(-90 42 42)"/>
+      <text x="42" y="40" text-anchor="middle" class="ring-n">${value}</text><text x="42" y="55" text-anchor="middle" class="ring-l">/${max} ⚡</text></svg>`;
+  }
+  function levelProgress(lv) {
+    const us = C.filter((u) => u.level === lv); const first = unitIndex(us[0].id);
+    const done = Math.max(0, Math.min(us.length, S.progress.unit - first));
+    const steps = done * 5 + (S.progress.unit >= first && S.progress.unit < first + us.length ? S.progress.step : 0);
+    return { us, done, pct: Math.round((steps / (us.length * 5)) * 100) };
+  }
+  function pathNodes(lv, full) {
+    const { us } = levelProgress(lv);
+    return `<div class="${full ? "path-full" : "path"}">${us.map((u) => { const i = unitIndex(u.id); const st = i < S.progress.unit ? "done" : i === S.progress.unit ? "now" : "locked";
+      const can = (window.CAN_DO || {})[u.id] || u.title;
+      return full ? `<div class="pnode ${st}"><span class="pdot">${st === "done" ? "✓" : st === "now" ? "▶" : "🔒"}</span><div><b>${esc(u.title)}</b><div class="muted">${st === "done" ? "✅ Ya puedes: " : st === "now" ? "Aprendiendo: " : "Desbloquearás: "}${esc(can)}</div>
+          ${st === "now" ? `<div class="mini-steps">${PLAN.map((p, k) => `<span class="${k < S.progress.step ? "d" : k === S.progress.step ? "n" : ""}" title="${p.name}">${p.icon}</span>`).join("")}</div>` : ""}</div></div>`
+        : `<span class="pdot ${st}" title="${esc(u.title)}">${st === "done" ? "✓" : st === "now" ? "▶" : ""}</span>`; }).join(full ? "" : '<span class="pline"></span>')}</div>`;
+  }
+  const BADGES = [
+    ["first", "🎉", "Primera clase", () => lessonsDone() >= 1],
+    ["streak3", "🔥", "3 días seguidos", () => S.streak.count >= 3],
+    ["streak7", "🔥", "Una semana seguida", () => S.streak.count >= 7],
+    ["streak30", "🏅", "30 días seguidos", () => S.streak.count >= 30],
+    ["words25", "🗂", "25 palabras", () => Object.keys(S.cards).length >= 25],
+    ["words100", "📚", "100 palabras", () => Object.keys(S.cards).length >= 100],
+    ["words300", "🧠", "300 palabras", () => Object.keys(S.cards).length >= 300],
+    ["mastered25", "💪", "25 palabras dominadas", () => Object.values(S.cards).filter((c) => c.box >= 4).length >= 25],
+    ["scene1", "🇺🇸", "Primera escena real", () => Object.keys(S.scenes || {}).length >= 1],
+    ["scenes5", "🗽", "5 escenas reales", () => Object.keys(S.scenes || {}).length >= 5],
+    ["scenesAll", "🌎", "Todas las escenas", () => Object.keys(S.scenes || {}).length >= SCENES().length],
+    ["speak500", "🎤", "500 palabras habladas", () => Object.values(S.log).reduce((n, l) => n + (l.speakingWords || 0), 0) >= 500],
+    ["unit1", "🏁", "Primera unidad aprobada", () => Object.keys(S.unitScores).length >= 1],
+    ["perfect", "💯", "Examen perfecto", () => Object.values(S.unitScores).some((x) => x >= 100)],
+    ["hw5", "📝", "5 tareas entregadas", () => S.homework.filter((h) => h.status !== "pending").length >= 5],
+    ...LEVELS.map((lv) => ["lvl" + lv, "🎓", "Nivel " + lv + " completo", () => { const us = C.filter((u) => u.level === lv); return S.progress.unit > unitIndex(us[us.length - 1].id); }])
+  ];
+  function newBadges() {
+    S.badges = S.badges || {}; const got = [];
+    BADGES.forEach(([id, icon, name, test]) => { try { if (!S.badges[id] && test()) { S.badges[id] = today(); got.push([icon, name]); } } catch (e) { /* ignorar */ } });
+    return got;
+  }
+  // Pantalla de celebración: puntos ganados, avance del día, logros y lo que ya puedes hacer
+  function celebrate({ icon, title, sub, xpBefore, canDo, closeLabel }) {
+    const xpNow = dayXP(S.log[today()]);
+    const gained = Math.max(0, xpNow - (xpBefore || 0));
+    const badges = newBadges(); save();
+    const nx = nextActivity();
+    const el = $("#celebrate");
+    el.innerHTML = `<div class="cel-card" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <canvas id="confetti" aria-hidden="true"></canvas>
+      <div class="cel-icon">${icon}</div><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ""}
+      ${gained ? `<div class="cel-xp">+${gained} ⚡</div>` : ""}
+      <div class="cel-goal"><span>Meta de hoy</span><div class="bar"><span id="celbar" style="width:${Math.min(100, ((xpBefore || 0) / DAILY_XP) * 100)}%"></span></div><b>${xpNow}/${DAILY_XP} ⚡${xpNow >= DAILY_XP ? " ✅" : ""}</b></div>
+      ${canDo ? `<div class="cel-can">🔓 <b>Desbloqueaste:</b> ya puedes ${esc(canDo.charAt(0).toLowerCase() + canDo.slice(1))}</div>` : ""}
+      ${badges.map(([i, n]) => `<div class="cel-badge">${i} <b>¡Nuevo logro!</b> ${esc(n)}</div>`).join("")}
+      <div class="cel-btns">${closeLabel ? `<button class="btn" data-action="celClose">${esc(closeLabel)}</button>` : `<button class="btn" data-action="celHome">Ir al inicio</button>`}
+      <button class="btn primary" data-action="celNext">▶ Siguiente: ${esc(nx.label)}</button></div></div>`;
+    el.hidden = false;
+    requestAnimationFrame(() => { const b = $("#celbar"); if (b) b.style.width = Math.min(100, (xpNow / DAILY_XP) * 100) + "%"; });
+    confetti();
+  }
+  function confetti() {
+    const cv = $("#confetti"); if (!cv || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+    const ctx2 = cv.getContext("2d"); const W = (cv.width = cv.offsetWidth), H = (cv.height = cv.offsetHeight);
+    const cs = getComputedStyle(document.documentElement);
+    const cols = ["--primary", "--good", "--mid", "--bad"].map((v) => cs.getPropertyValue(v).trim() || "#2f5bea");
+    const ps = Array.from({ length: 70 }, () => ({ x: W / 2, y: H * 0.25, vx: (Math.random() - 0.5) * 9, vy: -Math.random() * 7 - 2, r: Math.random() * 4 + 3, c: cols[Math.floor(Math.random() * cols.length)], a: Math.random() * 6 }));
+    let t = 0;
+    (function tick() { ctx2.clearRect(0, 0, W, H); ps.forEach((p) => { p.x += p.vx; p.y += p.vy; p.vy += 0.25; p.a += 0.2; ctx2.save(); ctx2.translate(p.x, p.y); ctx2.rotate(p.a); ctx2.fillStyle = p.c; ctx2.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx2.restore(); });
+      if (++t < 90) requestAnimationFrame(tick); else ctx2.clearRect(0, 0, W, H); })();
+  }
   function viewToday() {
     const u = curUnit();
     const step = PLAN[S.progress.step];
@@ -526,20 +615,36 @@
     const pick = res[new Date().getDate() % res.length];
     const goalDone = dayXP(log) >= DAILY_XP;
 
+    const nx = nextActivity();
+    const lp = levelProgress(currentLevel());
+    const nextCan = (window.CAN_DO || {})[u.id];
     return `
-    <section class="card hero">
+    <section class="card hero home">
       <div class="muted">${new Date().toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}</div>
-      <h1>${hello}, ${esc(S.profile.name)}!</h1>
-      <div class="chips">
-        <span class="chip">Nivel actual: <b>${u.level}</b></span>
-        <span class="chip">Meta: <b>${S.profile.goal}</b></span>
-        <span class="chip">🔥 Racha: <b>${S.streak.count}</b> días</span>
-        <span class="chip">${goalDone ? "✅ Meta de hoy cumplida (" + dayXP(log) + " ⚡)" : "🎯 Meta de hoy: " + dayXP(log) + "/" + DAILY_XP + " ⚡"}</span>
-      </div>
+      <h1>${hello}, ${esc(S.profile.name.split(" ")[0])}!</h1>
+      <div class="home-top">${ring(dayXP(log), DAILY_XP, "Puntos de hoy")}
+        <div class="home-stats"><div class="hs"><span class="hs-n">🔥 ${S.streak.count}</span><span class="muted">días seguidos</span></div>
+          <div class="hs"><span class="hs-n">${u.level} · ${lp.pct}%</span><span class="muted">del nivel ${u.level}</span></div>
+          <div class="hs"><span class="hs-n">${goalDone ? "✅" : "🎯"}</span><span class="muted">${goalDone ? "meta de hoy cumplida" : "meta de hoy: " + DAILY_XP + " ⚡"}</span></div></div></div>
+      <button class="btn primary big continue" data-action="nextAct"><span>${nx.icon}</span> ${esc(nx.label)}</button>
+      <p class="muted center">${esc(nx.why)}</p>
+    </section>
+
+    ${currentLevel() === "A2" && !Object.keys(S.unitScores).some((k) => k.startsWith("a2")) ? `<section class="card hint">
+      <b>¿Te sientes con muy poca base?</b> Te recomiendo empezar por <b>A1 · Fundamentos</b>: clases paso a paso desde cero, con el porqué de cada cosa.
+      <button class="btn primary" data-action="changeLevel" data-level="A1">Empezar en A1</button></section>` : ""}
+
+    ${routineCard(log, due)}
+
+    <section class="card path-card" data-action="go" data-view="progress">
+      <div class="row between"><h2>🗺 Mi camino · ${u.level}</h2><span class="muted">${lp.done}/${lp.us.length} unidades</span></div>
+      ${pathNodes(u.level, false)}
+      ${nextCan ? `<p>🔓 <b>Próximo logro:</b> ${esc(nextCan)}</p>` : ""}
     </section>
 
     ${teacherCard()}
 
+    <details class="more"><summary>Ver más: marcador, lo de ayer, recomendados…</summary>
     ${scoreboard(true)}
 
     ${currentLevel() === "A2" && !Object.keys(S.unitScores).some((k) => k.startsWith("a2")) ? `<section class="card hint">
@@ -589,7 +694,7 @@
         <a class="btn small" target="_blank" rel="noopener" href="${ytLink(u.yt)}">▶ Video del tema: ${esc(u.grammar.name)}</a>
       </div>
       <p class="muted">Tip: escucha 10-15 min al día. Primero con subtítulos en inglés, luego sin ellos.</p>
-    </section>`;
+    </section></details>`;
   }
 
   // ───────────────────────── MÉTODO: rutina diaria ─────────────────────────
@@ -1193,6 +1298,12 @@ SCORE: ${score}/10`;
     const weak = weakTopics(6);
     return `<section class="card hero slim"><h1>📈 Tu progreso</h1>
       <div class="chips"><span class="chip">Clases: <b>${lessonsDone()}</b></span><span class="chip">Horas: <b>${(totalMin / 60).toFixed(1)}</b></span><span class="chip">Palabras: <b>${Object.keys(S.cards).length}</b></span><span class="chip">🔥 <b>${S.streak.count}</b></span></div></section>
+      <section class="card"><h2>🗺 Mi camino</h2>
+        <div class="lvl-tabs">${LEVELS.map((lv) => { const p = levelProgress(lv); return `<button class="${(ctx.pathLv || currentLevel()) === lv ? "on" : ""}" data-action="pathLv" data-lv="${lv}"><b>${lv}</b><span>${p.pct}%</span></button>`; }).join("")}</div>
+        ${pathNodes(ctx.pathLv || currentLevel(), true)}</section>
+      ${(newBadges(), "")}
+      <section class="card"><h2>🏅 Mis logros <span class="muted">(${Object.keys(S.badges || {}).length}/${BADGES.length})</span></h2>
+        <div class="badges">${BADGES.map(([id, icon, name]) => { const d = (S.badges || {})[id]; return `<div class="badge ${d ? "on" : ""}" title="${d ? "Logrado el " + d : "Por lograr"}"><span>${d ? icon : "🔒"}</span><b>${esc(name)}</b></div>`; }).join("")}</div></section>
       ${scoreboard(false)}
       ${(() => { const w = weekStats() || { grade: "C", studied: 0, planned: 1, xp: 0, speak: 0, minutes: 0, hw: 0 }; const verdict = { A: `Excelente. Así se llega a ${S.profile.goal}.`, B: "Bien, pero puedes más. Completa todos los días planeados.", C: "Te falta constancia. Esta semana: rutina completa todos los días.", D: "Así no vas a avanzar. Vuelve a lo básico: 30 minutos diarios, sin excepción.", F: "Semana perdida. Hoy empezamos de nuevo: no rompas la racha." }[w.grade];
         return `<section class="card report"><h2>📋 Boletín semanal de ${TEACHER}</h2>
@@ -1288,6 +1399,10 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
+      case "nextAct": case "celNext": { $("#celebrate").hidden = true; const nx = nextActivity(); stopRec(); go(nx.view, nx.extra); break; }
+      case "celHome": $("#celebrate").hidden = true; go("today"); break;
+      case "celClose": $("#celebrate").hidden = true; break;
+      case "pathLv": ctx.pathLv = el.dataset.lv; rerenderKeepScroll(); break;
       case "stab": ctx.stab = el.dataset.t; ctx.sceneId = null; ctx.sc = null; stopRec(); ctx.recording = null; render(); break;
       case "openScene": ctx.stab = "real"; ctx.sceneId = el.dataset.id; ctx.sc = null; render(); window.scrollTo(0, 0); break;
       case "sceneBack": ctx.sceneId = null; ctx.sc = null; if (window.speechSynthesis) speechSynthesis.cancel(); render(); window.scrollTo(0, 0); break;
@@ -1463,14 +1578,23 @@ Usa exactamente estas secciones:
         if (need === "practice" && !(ctx.drill && ctx.drill.done)) return toast("Termina el entrenamiento con " + TEACHER + " (responder en voz alta)");
         const score = need === "test" ? quizScore("test") : need === "learn" || need === "practice" ? quizScore(need) : null;
         const mins = Math.max(5, Math.round((Date.now() - (ctx.started || Date.now())) / 60000));
-        const wasUnit = S.progress.unit;
+        const wasUnit = S.progress.unit; const xpBefore = dayXP(S.log[today()]);
+        const stepName = PLAN[S.progress.step].name;
         completeStep(mins, score);
-        if (need === "test") toast(S.progress.unit > wasUnit ? "🏁 ¡Unidad aprobada!" : "Repasa y vuelve a intentarlo 💪");
-        else toast("✅ Clase completada. ¡Bien hecho!");
-        go("today"); break;
+        go("today");
+        if (need === "test" && S.progress.unit > wasUnit) celebrate({ icon: "🏁", title: "¡Unidad aprobada!", sub: `${u.title}: ${score}% en el examen.`, xpBefore, canDo: (window.CAN_DO || {})[u.id] });
+        else if (need === "test") { toast("Necesitas " + PASS + "%. Repasa y vuelve a intentarlo 💪"); }
+        else celebrate({ icon: "✅", title: `¡Clase completada!`, sub: `${u.title} · ${stepName}${score != null ? " · " + score + "% de aciertos" : ""}`, xpBefore });
+        break;
       }
       case "flip": ctx.flip = true; render(); break;
-      case "grade": { const c = dueCards()[0]; if (c) { gradeCard(c, +el.dataset.q); touchStreak(); save(); } ctx.flip = false; render(); break; }
+      case "grade": {
+        const xpBefore = ctx.revXp != null ? ctx.revXp : (ctx.revXp = dayXP(S.log[today()]));
+        const c = dueCards()[0]; if (c) { gradeCard(c, +el.dataset.q); touchStreak(); save(); }
+        ctx.flip = false; ctx.revN = (ctx.revN || 0) + 1; render();
+        if (!dueCards().length) { celebrate({ icon: "🔁", title: "¡Repaso al día!", sub: `Repasaste ${ctx.revN} tarjetas. Tu memoria te lo agradece.`, xpBefore }); ctx.revXp = null; ctx.revN = 0; }
+        break;
+      }
       case "warmup": go("review", { warm: buildWarmup() }); break;
       case "listened": {
         const l = dayLog();
@@ -1518,7 +1642,9 @@ Usa exactamente estas secciones:
       const score = Math.round((st.ok / Math.max(1, mine)) * 100);
       S.scenes = S.scenes || {};
       S.scenes[sc.id] = { date: today(), score: Math.max(score, (S.scenes[sc.id] || {}).score || 0) };
+      const xpBefore = dayXP(S.log[today()]);
       const lg = dayLog(); lg.scenes = (lg.scenes || 0) + 1; touchStreak(); save();
+      setTimeout(() => celebrate({ icon: sc.icon, title: "¡Escena completada!", sub: `${sc.title}: ${score}% a la primera.`, xpBefore, closeLabel: "Ver mi resultado" }), 50);
     } else if (st.i < sc.lines.length && sc.lines[st.i][0] !== "Tú" && st.phase === "prompt") {
       speak(sceneText(sc.lines[st.i][3] || sc.lines[st.i][1]));
     }
@@ -1539,6 +1665,8 @@ Usa exactamente estas secciones:
     } catch (err) { chat.history.pop(); render(); toast(err.message); }
   }
 
+  document.addEventListener("click", (e) => { if (e.target.id === "celebrate") e.target.hidden = true; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#celebrate").hidden) $("#celebrate").hidden = true; });
   document.addEventListener("change", (e) => {
     const el = e.target;
     if (el.dataset.action === "scenario") { ctx.chat = { scenario: el.value, history: [] }; render(); }
@@ -1594,8 +1722,10 @@ Usa exactamente estas secciones:
       } else r = autoReview(u, text);
       h.feedback = r.text; h.score = r.score; h.status = "reviewed"; h.reviewed = today(); dayLog().hw = (dayLog().hw || 0) + 1;
       record(u.id, "writing", (r.score || 0) >= 7);
+      const xpBeforeHw = dayXP(S.log[today()]);
       dayLog().minutes += 20; touchStreak(); save();
-      out.innerHTML = md(r.text); e.submitter.disabled = false; toast("Tarea revisada ✔"); return;
+      out.innerHTML = md(r.text); e.submitter.disabled = false;
+      celebrate({ icon: "📝", title: "¡Tarea entregada!", sub: r.score != null ? `Nota: ${r.score}/10. Revisa la corrección debajo.` : "Revisa la corrección debajo.", xpBefore: xpBeforeHw, closeLabel: "Ver la corrección" }); return;
     }
     if (kind === "goalDate") {
       S.settings.goalDate = fd.get("goalDate") || ""; save(); rerenderKeepScroll();

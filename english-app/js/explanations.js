@@ -64,7 +64,7 @@ window.EXPLAIN = {
       { label: "Superlativo", parts: ["the", "adjetivo + est / most + adjetivo"], ex: "the cheapest / the most interesting", es: "el más barato / el más interesante" },
       { label: "Igualdad", parts: ["as", "adjetivo", "as"], ex: "Tea is as good as coffee.", es: "El té es tan bueno como el café" }
     ],
-    table: [["1 sílaba", "cheap → cheaper → the cheapest"], ["termina en consonante-vocal-consonante", "big → bigger → the biggest"], ["termina en -y", "easy → easier → the easiest"], ["2+ sílabas", "expensive → more expensive → the most expensive"], ["Irregulares", "good → better → the best · bad → worse → the worst · far → further"]],
+    table: [["1 sílaba", "cheap → cheaper → the cheapest"], ["termina en consonante-vocal-consonante", "big → bigger → the biggest"], ["termina en -y", "easy → easier → the easiest"], ["2+ sílabas", "expensive → more expensive → the most expensive"], ["Irregulares", "good → better → the best · bad → worse → the worst · far → farther → the farthest"]],
     why: "Las palabras cortas aceptan un final (-er / -est) sin volverse difíciles de pronunciar; las largas no (“expensiver” sería muy largo), por eso usan <i>more / the most</i> delante. <b>Than</b> significa “que” solo en comparaciones. El superlativo siempre lleva <b>the</b> porque señala una sola cosa: la mejor.",
     spanish: "En español todo se compara con “más”: más grande, más caro. En inglés las palabras cortas cambian: <i>bigger</i> (no “more big”). “Que” en una comparación es <b>than</b> (no “that”). “Tan … como” = <b>as … as</b>.",
     mistakes: [["more big", "bigger", "Adjetivo corto → -er, sin “more”."], ["She is taller that me.", "She is taller than me.", "En comparaciones “que” = than."], ["It's the more expensive.", "It's the most expensive.", "Superlativo = the most."]],
@@ -196,7 +196,7 @@ window.EXPLAIN = {
     qw: [
       "Preguntas por un lugar, así que usas <b>Where</b> (dónde). What = qué, When = cuándo, Who = quién.",
       "Para precios se usa <b>How much</b>. “How many” es para contar cosas (¿cuántos?).",
-      "7:30 es la mitad pasada de las siete: <b>half past seven</b> (literalmente “media pasada de siete”). También puedes decir “seven thirty”.",
+      "En EE. UU. la hora se dice con los números seguidos: 7:30 = <b>seven-thirty</b>. (“Half past seven” es más británico: lo vas a escuchar poco.)",
       "<b>Thirty</b> (30) se acentúa al inicio: THÚR-ti. Thirteen (13) se acentúa al final: thur-TÍIN."
     ]
   },
