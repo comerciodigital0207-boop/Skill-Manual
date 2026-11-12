@@ -44,6 +44,9 @@
     if (window.APP_RERENDER) window.APP_RERENDER();
   });
 
+  // ── Voces de Claude para leer en inglés (más naturales); si no hay, la app usa las del navegador ──
+  use("tts").then((t) => { if (t) window.APP_TTS = t; });
+
   // ── Profesor IA con la cuenta de Claude del usuario ──
   use("sample").then((sample) => {
     if (!sample) return;

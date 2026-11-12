@@ -26,6 +26,7 @@
     alarms: { study: null, review: null },
     unitScores: {},
     explanations: {},
+    scenes: {},
     curriculumVersion: 2
   });
 
@@ -125,7 +126,32 @@
   let voices = [];
   function loadVoices() { voices = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^en[-_]/i.test(v.lang)); }
   if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+  function pickVoice(i) {
+    const us = voices.filter((x) => /en[-_]US/i.test(x.lang));
+    const pool = us.length ? us : voices;
+    if (!i) return pool.find((x) => x.name === S.settings.voice) || pool[0];
+    return pool[i % pool.length] || pool[0];
+  }
+  // Lee varias líneas seguidas; cada personaje con una voz distinta cuando es posible
+  function speakLines(lines, onLine) {
+    const tts = window.APP_TTS;
+    if (tts) {
+      const names = ["buttery", "airy", "glassy", "rounded"];
+      tts.speak(lines.map((l, i) => ({ text: l.text, voice: names[l.voice % names.length], rate: S.settings.rate, language: "en", id: String(i) }))).catch(() => {});
+      return;
+    }
+    if (!window.speechSynthesis) { toast("Tu navegador no soporta lectura en voz alta"); return; }
+    speechSynthesis.cancel();
+    lines.forEach((l, i) => {
+      const u = new SpeechSynthesisUtterance(l.text); u.lang = "en-US"; u.rate = S.settings.rate;
+      const v = pickVoice(l.voice); if (v) u.voice = v;
+      if (l.voice && (!v || pickVoice(0) === v)) u.pitch = l.voice % 2 ? 1.25 : 0.85;
+      if (onLine) u.onstart = () => onLine(i);
+      speechSynthesis.speak(u);
+    });
+  }
   function speak(text, rate) {
+    if (window.APP_TTS) { window.APP_TTS.speak(text, { rate: rate || S.settings.rate, language: "en" }).catch(() => {}); return; }
     if (!window.speechSynthesis) { toast("Tu navegador no soporta lectura en voz alta"); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -135,6 +161,7 @@
     speechSynthesis.speak(u);
   }
   function speakEs(text) {
+    if (window.APP_TTS) { window.APP_TTS.speak(text, { language: "es" }).catch(() => {}); return; }
     if (!window.speechSynthesis) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text); u.lang = "es-ES"; u.rate = 1;
@@ -231,7 +258,7 @@
   }
   function dayXP(l) {
     if (!l) return 0;
-    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15;
+    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15 + (l.scenes || 0) * 15;
   }
   function weekStats(offset = 0) {
     const start = (S.profile && S.profile.created) || today();
@@ -571,7 +598,7 @@
       { done: log.reviews > 0 || (!due && Object.keys(S.cards).length > 0), icon: "🔁", t: "Repaso", m: "5 min", d: "Tarjetas de ayer en voz alta", act: `data-action="go" data-view="review"` },
       { done: log.steps.length > 0, icon: "📘", t: "Clase del día", m: "10-15 min", d: "Un paso del plan", act: `data-action="go" data-view="class"` },
       { done: !!log.listened, icon: "🎧", t: "Escucha real", m: "10 min", d: "Video o podcast del tema, repitiendo frases", act: `data-action="listened" href="${ytLink(curUnit().yt)}" target="_blank" rel="noopener"`, a: true },
-      { done: log.speakingWords >= 30, icon: "🎤", t: "Habla", m: "5 min", d: "En voz alta, aunque te equivoques", act: `data-action="go" data-view="speaking"` }
+      { done: log.speakingWords >= 30, icon: "🎤", t: "Habla", m: "5 min", d: "Una escena de la vida real en EE. UU., en voz alta", act: `data-action="go" data-view="speaking"` }
     ];
     const n = blocks.filter((b) => b.done).length;
     return `<section class="card">
@@ -725,8 +752,22 @@
   }
   function quizDone(name) { const st = ctx.quiz && ctx.quiz[name]; return st && Object.keys(st.answers).length === st.items.length; }
 
+  function nativeBlock(u) {
+    const pairs = ((window.NATIVE || {}).units || {})[u.id];
+    if (!pairs) {
+      return window.AI.enabled() ? `<section class="card native"><h2>🇺🇸 Así lo dice un nativo</h2>
+        ${S.explanations["native:" + u.id] ? md(S.explanations["native:" + u.id]) : `<p class="muted">Pídele a ${TEACHER} las formas naturales y la jerga de EE. UU. para este tema.</p>
+        <button class="btn" data-action="nativeAI" data-unit="${u.id}">🤖 ¿Cómo lo dice un nativo de EE. UU.?</button><div id="native-${u.id}"></div>`}</section>` : "";
+    }
+    return `<section class="card native"><h2>🇺🇸 Así lo dice un nativo</h2>
+      <p class="muted">Lo de la izquierda es correcto, pero suena a libro. Lo de la derecha es como hablan de verdad en EE. UU. Escúchalo y repítelo.</p>
+      ${pairs.map(([learner, nat, why]) => `<div class="npair"><div class="nlearner">📘 ${esc(learner)}</div>
+        <div class="nnative"><button class="icon" data-action="say" data-text="${esc(nat.split(" / ")[0])}" aria-label="Escuchar">🔊</button> 🇺🇸 <b>${esc(nat)}</b></div>
+        <div class="muted">${esc(why)}</div></div>`).join("")}
+    </section>`;
+  }
   function stepLearn(u) {
-    return grammarBlock(u) + vocabBlock(u) + quizBlock(u, u.quiz.slice(0, 2), "learn") + `
+    return grammarBlock(u) + nativeBlock(u) + vocabBlock(u) + quizBlock(u, u.quiz.slice(0, 2), "learn") + `
       <section class="card"><p class="muted">Al terminar, las ${u.vocab.length} palabras se agregan a tu repaso inteligente (flashcards).</p>
       <button class="btn primary big" data-action="finishStep" data-need="learn">Terminar clase ✔</button></section>`;
   }
@@ -1033,26 +1074,103 @@ SCORE: ${score}/10`;
 
   // ───────────────────────── SPEAKING ─────────────────────────
   const SCENARIOS = [
-    "Small talk with a new colleague on your first day at work.",
-    "A job interview for a position you would love.",
-    "Ordering food and complaining politely about a wrong order in a restaurant.",
-    "Checking in at a hotel and asking for recommendations.",
-    "Talking with a friend about a movie or series you watched.",
-    "A doctor's appointment: describe your symptoms.",
-    "Negotiating the price of a used car.",
-    "A debate about technology and its impact on society."
+    "Ordering at a coffee shop in Los Angeles. You are the customer; I am the barista.",
+    "Small talk with your neighbor in the elevator of your apartment building in Miami.",
+    "Checking out at a grocery store in Texas.",
+    "Ordering dinner at a diner in New York; I'm your server.",
+    "First day at a new job in an American office; I'm a friendly coworker.",
+    "Calling a doctor's office to make an appointment.",
+    "Chatting with a new friend at a house party about work, hobbies and weekend plans.",
+    "A job interview for a position you would love at an American company.",
+    "Returning something you bought at a store and asking for a refund.",
+    "Talking with a friend about a show you binge-watched."
   ];
+  const firstName = () => ((S.profile && S.profile.name) || "Ana").split(" ")[0];
+  const sceneText = (t) => t.replace(/\bAna\b/g, firstName());
+  const SCENES = () => (window.NATIVE || {}).scenes || [];
+  function sceneList() {
+    const done = S.scenes || {};
+    const lvl = LEVELS.indexOf(currentLevel());
+    return `<section class="card"><h2>🇺🇸 Vida real en EE. UU.</h2>
+      <p class="muted">Situaciones del día a día, con la forma en que hablan de verdad. En cada escena: <b>1. Escucha</b> sin leer → <b>2. Entiende</b> (preguntas) → <b>3. Actúa tu papel</b> en voz alta.</p>
+      <div class="scenes">${SCENES().map((sc) => { const d = done[sc.id]; const hard = LEVELS.indexOf(sc.level) > lvl + 1;
+        return `<button class="scene ${d ? "done" : ""}" data-action="openScene" data-id="${sc.id}"><span class="sicon">${sc.icon}</span>
+          <span class="sbody"><b>${esc(sc.title)}</b><span class="muted">${sc.level}${hard ? " · un poco difícil para ti todavía" : ""}</span></span>
+          <span>${d ? `<span class="pill good">✅ ${d.score}%</span>` : ""}</span></button>`; }).join("")}</div></section>
+    <section class="card"><h2>🗣 Cómo suena el inglés de verdad</h2>
+      <p class="muted">Al hablar rápido, los estadounidenses juntan palabras. Si no conoces estas formas, no entiendes a los nativos aunque sepas el vocabulario. Úsalas al hablar, no en textos formales.</p>
+      <div class="reds">${(window.NATIVE.reductions || []).map(([r, full, ex]) => `<div class="red"><button class="icon" data-action="say" data-text="${esc(ex)}" aria-label="Escuchar">🔊</button>
+        <div><b>${esc(r)}</b> <span class="muted">= ${esc(full)}</span><div class="ex">${esc(ex)}</div></div></div>`).join("")}</div>
+      <button class="btn small" data-action="addReductions">➕ Agregar estas formas a mis tarjetas</button></section>`;
+  }
+  function sceneView(sc) {
+    const st = (ctx.sc = ctx.sc && ctx.sc.id === sc.id ? ctx.sc : { id: sc.id, mode: "listen", show: false, es: false, quiz: {}, i: 0, phase: "prompt", ok: 0, miss: 0 });
+    const lines = sc.lines.map(([who, en, es, spoken]) => ({ who, en: sceneText(en), es: sceneText(es), spoken: spoken ? sceneText(spoken) : null }));
+    const speakers = [...new Set(lines.map((l) => l.who))];
+    const tabs = [["listen", "1. Escucha"], ["quiz", "2. Entiende"], ["role", "3. Actúa"]];
+    let body = "";
+    if (st.mode === "listen") {
+      body = `<p>${st.show ? "Ahora lee mientras escuchas. Repite en voz alta las frases que te cuesten." : "Primero <b>escucha sin leer</b>, como en la vida real. Intenta entender la idea general. Luego muestra el texto."}</p>
+        <button class="btn primary big" data-action="playScene">▶ Escuchar la conversación</button>
+        <div class="row"><button class="btn small" data-action="sceneToggle" data-k="show">${st.show ? "🙈 Ocultar texto" : "👀 Mostrar texto"}</button>
+        ${st.show ? `<button class="btn small" data-action="sceneToggle" data-k="es">${st.es ? "Ocultar traducción" : "🇪🇸 Ver traducción"}</button>` : ""}</div>
+        ${st.show ? `<div class="dialog">${lines.map((l, i) => `<div class="dline ${l.who === "Tú" ? "me" : ""}"><span class="who">${esc(l.who === "Tú" ? "Tú" : l.who)}</span>
+          <div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}" aria-label="Escuchar">🔊</button> ${esc(l.en)}${st.es ? `<div class="muted">${esc(l.es)}</div>` : ""}${l.spoken && st.es ? `<div class="muted">Dicho completo: ${esc(l.spoken)}</div>` : ""}</div></div>`).join("")}</div>
+        <h3>Expresiones nativas de esta escena</h3>
+        <div class="exprs">${sc.expressions.map(([e, m]) => `<div><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> <b>${esc(e)}</b> <span class="muted">— ${esc(m)}</span></div>`).join("")}</div>
+        <button class="btn small" data-action="addSceneCards" data-id="${sc.id}">➕ Agregar estas expresiones a mis tarjetas</button>` : ""}
+        <button class="btn big" data-action="sceneMode" data-m="quiz">Siguiente: 2. Entiende →</button>`;
+    } else if (st.mode === "quiz") {
+      const answered = Object.keys(st.quiz).length;
+      body = `<p>¿Entendiste? Si dudas, vuelve a escuchar (puedes hacerlo las veces que quieras).</p>
+        <button class="btn small" data-action="playScene">▶ Escuchar otra vez</button>
+        ${sc.quiz.map(([q, opts, a], qi) => { const pick = st.quiz[qi];
+          return `<div class="qblock"><div class="q">${qi + 1}. ${esc(q)}</div><div class="options">${opts.map((o, oi) => `<button class="opt ${pick != null ? (oi === a ? "right" : oi === pick ? "wrong" : "") : ""}" ${pick != null ? "disabled" : ""} data-action="sceneQuiz" data-q="${qi}" data-o="${oi}">${esc(o)}</button>`).join("")}</div></div>`; }).join("")}
+        ${answered === sc.quiz.length ? `<button class="btn primary big" data-action="sceneMode" data-m="role">Siguiente: 3. Actúa tu papel →</button>` : ""}`;
+    } else {
+      if (st.i >= lines.length) {
+        const mine = lines.filter((l) => l.who === "Tú").length;
+        const score = Math.round((st.ok / Math.max(1, mine)) * 100);
+        body = `<div class="flash"><div class="front">🎬 ¡Escena completada!</div><div>Dijiste bien a la primera <b>${st.ok} de ${mine}</b> frases (${score}%).</div>
+          <div class="muted">${score >= 80 ? `${TEACHER}: “That was so natural! Nice job.”` : `${TEACHER}: “Good try! Do it one more time and it'll sound way better.”`}</div></div>
+          <div class="row"><button class="btn" data-action="sceneRestart">🔁 Repetir la escena</button><button class="btn primary" data-action="sceneBack">Elegir otra escena</button></div>`;
+      } else {
+        const l = lines[st.i];
+        const prev = lines.slice(Math.max(0, st.i - 2), st.i);
+        body = `<p class="muted">Tú haces el papel de <b>“Tú”</b>. Cuando sea tu turno, verás en español lo que debes decir: <b>dilo en inglés en voz alta</b> y luego compara con la versión nativa.</p>
+          <div class="dialog">${prev.map((p) => `<div class="dline ${p.who === "Tú" ? "me" : ""} past"><span class="who">${esc(p.who)}</span><div>${esc(p.en)}</div></div>`).join("")}
+          ${l.who !== "Tú" ? `<div class="dline"><span class="who">${esc(l.who)}</span><div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}">🔊</button> <b>${esc(l.en)}</b><div class="muted">${esc(l.es)}</div></div></div>`
+            : `<div class="dline me turn"><span class="who">Tú</span><div><div class="muted">Tu turno. Di en inglés:</div><b>🇪🇸 ${esc(l.es)}</b>
+              ${st.phase === "reveal" ? `<div class="native-say"><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}">🔊</button> 🇺🇸 <b>${esc(l.en)}</b></div>` : ""}</div></div>`}</div>
+          ${l.who !== "Tú" ? `<button class="btn primary big" data-action="sceneNext">Siguiente →</button>`
+            : st.phase === "reveal" ? `<div class="grade two"><button class="btn bad" data-action="sceneGrade" data-ok="0">🔁 La repito</button><button class="btn good" data-action="sceneGrade" data-ok="1">✅ La dije bien</button></div>`
+            : `<button class="btn primary big" data-action="sceneReveal">Ya la dije → escuchar cómo lo dice un nativo</button>`}
+          <div class="muted center">Línea ${st.i + 1} de ${lines.length}</div>`;
+      }
+    }
+    return `<section class="card hero slim"><button class="link" data-action="sceneBack">← Todas las escenas</button>
+      <h1>${sc.icon} ${esc(sc.title)}</h1><p class="muted">${esc(sc.setting)} · Nivel ${sc.level}</p>
+      <div class="tip">💡 <b>Tip cultural:</b> ${esc(sc.tip)}</div></section>
+      <div class="tabs three">${tabs.map(([k, n]) => `<button class="${st.mode === k ? "on" : ""}" data-action="sceneMode" data-m="${k}">${n}</button>`).join("")}</div>
+      <section class="card">${body}</section>`;
+  }
   function viewSpeaking() {
     const done = C.slice(0, Math.max(1, S.progress.unit + 1));
     if (!ctx.freeUnit) ctx.freeUnit = done[Math.floor(Math.random() * done.length)].id;
     const fu = C[unitIndex(ctx.freeUnit)];
     const chat = (ctx.chat = ctx.chat || { scenario: SCENARIOS[0], history: [] });
-    return `<section class="card hero slim"><h1>🎤 Speaking</h1><p class="muted">Practica todos los días: 2 minutos hablando valen más que 20 leyendo.</p></section>
+    const stab = ctx.stab || "real";
+    if (stab === "real" && ctx.sceneId) { const sc = SCENES().find((x) => x.id === ctx.sceneId); if (sc) return sceneView(sc); }
+    const tabs = `<div class="tabs three">${[["real", "🇺🇸 Vida real"], ["reto", "🎯 Reto"], ["chat", "💬 Conversar"]].map(([k, n]) => `<button class="${stab === k ? "on" : ""}" data-action="stab" data-t="${k}">${n}</button>`).join("")}</div>`;
+    const head = `<section class="card hero slim"><h1>🎤 Escucha y habla</h1><p class="muted">Practica como se habla en la vida real en EE. UU. 2 minutos hablando valen más que 20 leyendo.</p></section>` + tabs;
+    if (stab === "real") return head + sceneList();
+    if (stab === "reto") return head + `
       <section class="card"><h2>🎯 Reto de speaking</h2>
         <p class="muted">Practica hablar 1 o 2 minutos sobre un tema de tus clases. Sigue los 4 pasos en orden.</p>
         ${speakingPanel(fu, "free")}
-        <button class="btn small" data-action="newPrompt">🔄 Darme otro tema</button></section>
-      <section class="card"><h2>💬 Conversación con profesor IA</h2>
+        <button class="btn small" data-action="newPrompt">🔄 Darme otro tema</button></section>`;
+    return head + `
+      <section class="card"><h2>💬 Conversa con ${TEACHER} (situaciones reales en EE. UU.)</h2>
         ${window.AI.enabled() ? `
         <label>Situación<select data-action="scenario">${SCENARIOS.map((s) => `<option ${s === chat.scenario ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
         <div class="chat" id="chat">${chat.history.length ? chat.history.map((m) => `<div class="msg ${m.role}">${m.role === "assistant" ? `<button class="icon" data-action="say" data-text="${esc(m.content.split("💡")[0])}">🔊</button>` : ""}${md(m.content)}</div>`).join("") : '<p class="muted">Pulsa 🎙 y saluda para empezar (o escribe).</p>'}</div>
@@ -1170,6 +1288,59 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
+      case "stab": ctx.stab = el.dataset.t; ctx.sceneId = null; ctx.sc = null; stopRec(); ctx.recording = null; render(); break;
+      case "openScene": ctx.stab = "real"; ctx.sceneId = el.dataset.id; ctx.sc = null; render(); window.scrollTo(0, 0); break;
+      case "sceneBack": ctx.sceneId = null; ctx.sc = null; if (window.speechSynthesis) speechSynthesis.cancel(); render(); window.scrollTo(0, 0); break;
+      case "sceneMode": ctx.sc.mode = el.dataset.m; if (el.dataset.m === "role") { ctx.sc.i = 0; ctx.sc.phase = "prompt"; ctx.sc.ok = 0; ctx.sc.finished = false; window.scrollTo(0, 0); afterSceneStep(); break; } render(); window.scrollTo(0, 0); break;
+      case "sceneToggle": ctx.sc[el.dataset.k] = !ctx.sc[el.dataset.k]; rerenderKeepScroll(); break;
+      case "playScene": {
+        const sc = SCENES().find((x) => x.id === ctx.sceneId);
+        const who = [...new Set(sc.lines.map((l) => l[0]))];
+        speakLines(sc.lines.map((l) => ({ text: sceneText(l[3] || l[1]), voice: who.indexOf(l[0]) })));
+        const lg = dayLog(); if (!lg.listened) { lg.listened = true; lg.minutes += 5; save(); }
+        break;
+      }
+      case "sceneQuiz": {
+        const sc = SCENES().find((x) => x.id === ctx.sceneId); const qi = +el.dataset.q; const oi = +el.dataset.o;
+        if (ctx.sc.quiz[qi] != null) break; ctx.sc.quiz[qi] = oi;
+        record(curUnit().id, "listening", oi === sc.quiz[qi][2]); save(); rerenderKeepScroll(); break;
+      }
+      case "sceneNext": ctx.sc.i++; ctx.sc.phase = "prompt"; afterSceneStep(); break;
+      case "sceneReveal": {
+        const sc = SCENES().find((x) => x.id === ctx.sceneId); const l = sc.lines[ctx.sc.i];
+        ctx.sc.phase = "reveal"; speak(sceneText(l[3] || l[1])); rerenderKeepScroll(); break;
+      }
+      case "sceneGrade": {
+        const ok = el.dataset.ok === "1";
+        if (ok) { if (!ctx.sc.missed) ctx.sc.ok++; ctx.sc.missed = false; ctx.sc.i++; ctx.sc.phase = "prompt"; }
+        else { ctx.sc.missed = true; ctx.sc.phase = "prompt"; toast("Escúchala otra vez y repítela 🔁"); }
+        record(curUnit().id, "speaking", ok); dayLog().speakingWords += 4; save(); afterSceneStep(); break;
+      }
+      case "sceneRestart": ctx.sc.i = 0; ctx.sc.ok = 0; ctx.sc.phase = "prompt"; ctx.sc.finished = false; afterSceneStep(); break;
+      case "addSceneCards": {
+        const sc = SCENES().find((x) => x.id === el.dataset.id); let n = 0;
+        sc.expressions.forEach(([e, m]) => { const id = "native:" + e.toLowerCase(); if (!S.cards[id]) { S.cards[id] = { id, en: e, es: m, ex: "", unitId: "custom", box: 0, due: today() }; n++; } });
+        save(); toast(n ? `${n} expresiones agregadas a tus tarjetas` : "Ya estaban en tus tarjetas"); break;
+      }
+      case "addReductions": {
+        let n = 0;
+        window.NATIVE.reductions.forEach(([r, full, ex]) => { const id = "native:" + r; if (!S.cards[id]) { S.cards[id] = { id, en: r, es: "= " + full, ex, unitId: "custom", box: 0, due: today() }; n++; } });
+        save(); toast(n ? `${n} formas agregadas a tus tarjetas` : "Ya estaban en tus tarjetas"); break;
+      }
+      case "nativeAI": {
+        const u = C[unitIndex(el.dataset.unit)]; const out = $("#native-" + u.id);
+        el.disabled = true; out.innerHTML = '<p class="muted">Preparando…</p>';
+        try {
+          const txt = await window.AI.explain({ level: u.level, question: `Tema de la clase: "${u.grammar.name}" (${u.title}). Ejemplos de libro: ${u.grammar.examples.join(" | ")}.
+Muestra cómo hablan de verdad en Estados Unidos sobre este tema, en lenguaje cotidiano y jerga actual (sin groserías):
+## Suena a libro → Así lo dice un nativo (5 pares: frase de libro → frase nativa de EE. UU. → explicación corta en español)
+## Expresiones y jerga útiles (5, con significado y ejemplo)
+## Cómo se pronuncia al hablar rápido (reducciones como gonna, wanna, contracciones)
+## Mini diálogo real (6 líneas en una situación cotidiana en EE. UU., con traducción)` });
+          S.explanations["native:" + u.id] = txt; save(); rerenderKeepScroll();
+        } catch (err) { out.innerHTML = `<p class="pill bad">${esc(err.message)}</p>`; el.disabled = false; }
+        break;
+      }
       case "tab": ctx.tab = el.dataset.tab; ctx.flip = false; render(); break;
       case "vfilter": ctx.vfilter = el.dataset.f; render(); break;
       case "studyFiltered": {
@@ -1339,6 +1510,20 @@ Usa exactamente estas secciones:
     }
   });
 
+  function afterSceneStep() {
+    const sc = SCENES().find((x) => x.id === ctx.sceneId); const st = ctx.sc;
+    if (st.i >= sc.lines.length && !st.finished) {
+      st.finished = true;
+      const mine = sc.lines.filter((l) => l[0] === "Tú").length;
+      const score = Math.round((st.ok / Math.max(1, mine)) * 100);
+      S.scenes = S.scenes || {};
+      S.scenes[sc.id] = { date: today(), score: Math.max(score, (S.scenes[sc.id] || {}).score || 0) };
+      const lg = dayLog(); lg.scenes = (lg.scenes || 0) + 1; touchStreak(); save();
+    } else if (st.i < sc.lines.length && sc.lines[st.i][0] !== "Tú" && st.phase === "prompt") {
+      speak(sceneText(sc.lines[st.i][3] || sc.lines[st.i][1]));
+    }
+    rerenderKeepScroll();
+  }
   function rerenderKeepScroll() { const y = window.scrollY; render(); window.scrollTo(0, y); }
 
   async function sendChat(text) {

@@ -35,3 +35,9 @@ Los datos se guardan en el dispositivo (usa Exportar/Importar para pasarlos a ot
 - **Dominio antes de avanzar**: examen con 80% mínimo, tarea entregada antes del examen y speaking mínimo (25 palabras en A1, 45 desde A2).
 - **Repaso obligatorio**: con 10 o más tarjetas atrasadas, la clase nueva se bloquea hasta repasar.
 - **Puntos diarios (meta 60 ⚡)** y **boletín semanal** con nota de la A a la F.
+
+## Inglés nativo de EE. UU.
+- **“Así lo dice un nativo”** en cada clase de A1 y A2: frase de libro vs. cómo se dice en EE. UU. (desde B1, generado por el profesor IA).
+- **Vida real en EE. UU.**: 10 escenas cotidianas (cafetería, vecino, supermercado, Uber, restaurante, mensajes, farmacia, trabajo, llamada, fiesta). En cada una: escuchar sin leer, preguntas de comprensión y role-play de tu papel en voz alta.
+- **Cómo suena de verdad**: reducciones del habla (gonna, wanna, gotta, kinda, lemme…).
+- El profesor de conversación habla en inglés casual de EE. UU. y te muestra cómo lo diría un nativo.

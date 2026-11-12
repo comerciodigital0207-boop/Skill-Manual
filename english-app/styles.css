@@ -236,3 +236,27 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .big-rec { min-width: 150px; }
 .rec-on { background: var(--bad); border-color: var(--bad); }
 .center { text-align: center; }
+.native { background: linear-gradient(135deg, var(--card), var(--primary-soft)); }
+.npair { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 8px 0; background: var(--card); display: grid; gap: 4px; }
+.nlearner { color: var(--muted); }
+.nnative { font-size: 1.05rem; }
+.tabs.three { grid-template-columns: repeat(3, 1fr); }
+.scenes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+.scene { display: flex; gap: 10px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 12px; padding: 10px; font: inherit; cursor: pointer; }
+.scene .sbody { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.scene.done { border-color: var(--good); }
+.sicon { font-size: 1.6rem; }
+.reds { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; margin-bottom: 8px; }
+.red { display: flex; gap: 6px; align-items: flex-start; background: var(--bg); border-radius: 10px; padding: 8px; }
+.tip { background: var(--mid-soft); border-radius: 10px; padding: 8px 12px; margin-top: 8px; }
+.dialog { display: grid; gap: 8px; margin: 10px 0; }
+.dline { display: grid; grid-template-columns: 92px 1fr; gap: 8px; align-items: start; background: var(--bg); border-radius: 12px; padding: 8px 10px; }
+.dline > div { min-width: 0; overflow-wrap: anywhere; }
+.dline .who { font-weight: 700; color: var(--muted); font-size: .85rem; padding-top: 6px; }
+.dline.me { background: var(--primary-soft); }
+.dline.me .who { color: var(--primary); }
+.dline.past { opacity: .6; }
+.dline.turn { outline: 2px solid var(--primary); }
+.native-say { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); }
+.exprs { display: grid; gap: 4px; margin-bottom: 8px; }
+@media (max-width: 480px) { .dline { grid-template-columns: 1fr; gap: 2px; } .dline .who { padding-top: 0; } .tabs.three button { font-size: .85rem; padding: 10px 2px; } }
