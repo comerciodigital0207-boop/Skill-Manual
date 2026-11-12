@@ -450,7 +450,7 @@
     $("#nav").hidden = !S.profile;
     $("#streak").textContent = S.profile ? "🔥 " + S.streak.count + "  ⚡ " + dayXP(S.log[today()]) + "/" + DAILY_XP : "";
     if (!S.profile) { main.innerHTML = viewOnboarding(); return; }
-    const views = { today: viewToday, class: viewClass, review: viewReview, homework: viewHomework, speaking: viewSpeaking, progress: viewProgress, settings: viewSettings, unit: viewUnitStudy };
+    const views = { today: viewToday, class: viewClass, review: viewReview, homework: viewHomework, speaking: viewSpeaking, progress: viewProgress, guide: viewGuide, settings: viewSettings, unit: viewUnitStudy };
     main.innerHTML = (views[view] || viewToday)();
     if (view === "class" || view === "unit") afterClassRender();
   }
@@ -819,6 +819,7 @@
       <ul class="examples">${u.grammar.examples.map((e) => `<li><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> ${esc(e)}</li>`).join("")}</ul>
       ${u.sound ? `<div class="sound"><b>🗣 Suena como nativo:</b> ${u.sound}</div>` : ""}
       <p class="muted">Escucha cada ejemplo y repítelo en voz alta 3 veces, imitando el ritmo. Así se aprende a hablar, no solo a leer.</p>
+      <button class="btn small" data-action="go" data-view="guide">📐 Ver en la Guía cómo armar oraciones y los tiempos verbales</button>
       ${window.AI.enabled() ? `<details><summary>🤖 Pregúntale al profesor IA sobre este tema</summary>
         <form data-form="askAI"><input name="q" placeholder="Ej: ¿cuándo uso 'since' y cuándo 'for'?" required><button class="btn small">Preguntar</button></form><div id="aiAnswer"></div></details>` : ""}
     </section>`;
@@ -1386,6 +1387,151 @@ SCORE: ${score}/10`;
     </section>`;
   }
 
+
+  // ───────────────────────── GUÍA: armar oraciones, tiempos, conjugador, moldes ─────────────────────────
+  const G = () => window.GRAMMAR;
+  const SUBJ = [["I", "yo"], ["you", "tú / usted"], ["he", "él"], ["she", "ella"], ["it", "eso (cosa, clima)"], ["we", "nosotros"], ["they", "ellos / ellas"]];
+  const DOUBLE = new Set(["run", "swim", "stop", "plan", "get", "sit", "put", "shop"]);
+  function third(v) {
+    if (v === "have") return "has"; if (v === "be") return "is";
+    if (/(s|sh|ch|x|z|o)$/.test(v)) return v + "es";
+    if (/[^aeiou]y$/.test(v)) return v.slice(0, -1) + "ies";
+    return v + "s";
+  }
+  function ingForm(v) {
+    if (v === "be") return "being";
+    if (/ie$/.test(v)) return v.slice(0, -2) + "ying";
+    if (/[^e]e$/.test(v) && v !== "be") return v.slice(0, -1) + "ing";
+    if (DOUBLE.has(v)) return v + v.slice(-1) + "ing";
+    return v + "ing";
+  }
+  // Arma la oración y devuelve sus piezas: [rol, texto]. rol: who | aux | verb | what | wh
+  function conjugate({ subj, verb, tense, type, wh, comp }) {
+    const [base, past, pp] = G().verbs.find((v) => v[0] === verb) || [verb, verb + "ed", verb + "ed"];
+    const is3 = ["he", "she", "it"].includes(subj); const isI = subj === "I";
+    const beNow = isI ? "am" : is3 ? "is" : "are"; const bePast = isI || is3 ? "was" : "were";
+    const S = subj === "I" ? "I" : subj;
+    let aux = null, v = [], neg = null;
+    const isBe = base === "be";
+    if (tense === "pres") {
+      if (isBe) { aux = beNow; v = []; neg = beNow === "am" ? "am not" : beNow + " not"; }
+      else { aux = is3 ? "does" : "do"; v = [type === "aff" ? (is3 ? third(base) : base) : base]; neg = aux + " not"; if (type === "aff") aux = null; }
+    } else if (tense === "cont") { aux = beNow; v = [ingForm(base)]; neg = beNow === "am" ? "am not" : beNow + " not"; }
+    else if (tense === "past") {
+      if (isBe) { aux = bePast; v = []; neg = bePast + " not"; }
+      else { aux = "did"; v = [type === "aff" ? past : base]; neg = "did not"; if (type === "aff") aux = null; }
+    } else if (tense === "will") { aux = "will"; v = [base]; neg = "will not"; }
+    else if (tense === "goingto") { aux = beNow; v = ["going to", base]; neg = beNow === "am" ? "am not" : beNow + " not"; }
+    else if (tense === "perf") { aux = is3 ? "has" : "have"; v = [pp]; neg = aux + " not"; }
+    else if (tense === "can") { aux = "can"; v = [base]; neg = "cannot"; }
+    let c = (comp || "").trim();
+    if (wh && type === "q") {
+      if (wh === "What" && !isBe) c = "";
+      if (wh === "Where" && /^(to|in|at|from|on|home)\b/.test(c)) c = "";
+      if (wh === "Where" && isBe) c = "";
+    }
+    const parts = [];
+    if (type === "q") {
+      if (wh) parts.push(["wh", wh]);
+      const qa = aux || (isBe ? (tense === "past" ? bePast : beNow) : null);
+      parts.push(["aux", cap(qa, !wh)]); parts.push(["who", S]); v.forEach((x) => parts.push(["verb", x]));
+    } else {
+      parts.push(["who", cap(S, true)]);
+      if (type === "neg") parts.push(["aux", neg]); else if (aux) parts.push(["aux", aux]);
+      v.forEach((x) => parts.push(["verb", x]));
+    }
+    if (c) parts.push(["what", c]);
+    let full = parts.map((p) => p[1]).join(" ").replace(/\bI\b/g, "I");
+    full = full.charAt(0).toUpperCase() + full.slice(1) + (type === "q" ? "?" : ".");
+    const short = contract(full, tense === "perf");
+    let answer = "";
+    if (type === "q" && !wh) {
+      const qa = (parts.find((p) => p[0] === "aux") || [])[1].toLowerCase();
+      const who = subj === "you" ? "I" : subj === "I" ? "you" : subj;
+      const negA = { do: "don't", does: "doesn't", did: "didn't", am: "'m not", is: "isn't", are: "aren't", was: "wasn't", were: "weren't", will: "won't", have: "haven't", has: "hasn't", can: "can't" };
+      const yesAux = who === "I" && qa === "are" ? "am" : who === "I" && qa === "were" ? "was" : who === "you" && qa === "am" ? "are" : who === "you" && qa === "was" ? "were" : qa;
+      const noAux = negA[yesAux];
+      answer = `Yes, ${who} ${yesAux}. / No, ${who}${noAux.startsWith("'") ? "" : " "}${noAux}.`;
+    }
+    return { parts, full, short: short !== full ? short : "", answer };
+  }
+  function cap(w, yes) { return yes && w ? w.charAt(0).toUpperCase() + w.slice(1) : w; }
+  function contract(t, perf) {
+    return t.replace(/\bI am not\b/, "I'm not").replace(/\bI am\b/, "I'm").replace(/\b(He|She|It) is not\b/, "$1 isn't").replace(/\b(You|We|They) are not\b/, "$1 aren't")
+      .replace(/\b(He|She|It) is\b/, "$1's").replace(/\b(You|We|They) are\b/, "$1're").replace(/\bdo not\b/, "don't").replace(/\bdoes not\b/, "doesn't").replace(/\bdid not\b/, "didn't")
+      .replace(/\bwill not\b/, "won't").replace(/\bcannot\b/, "can't").replace(/\bhave not\b/, "haven't").replace(/\bhas not\b/, "hasn't").replace(/\bwas not\b/, "wasn't").replace(/\bwere not\b/, "weren't")
+      .replace(/\b(I|You|We|They|He|She|It) will\b/, "$1'll")
+      .replace(/^(I|You|We|They) have (?!to\b)(\w+)/, (m, a, b) => (perf ? `${a}'ve ${b}` : m)).replace(/^(He|She|It) has (\w+)/, (m, a, b) => (perf ? `${a}'s ${b}` : m));
+  }
+  const ROLE = { who: "¿Quién?", aux: "Ayudante", verb: "Verbo", what: "¿Qué? / resto", wh: "Pregunta", link: "Conector", where: "¿Dónde?", when: "¿Cuándo?" };
+  function chips(parts) { return `<div class="sent">${parts.map(([r, t, es]) => `<span class="blk r-${r}"><b>${esc(t)}</b><small>${esc(es || ROLE[r] || "")}</small></span>`).join("")}</div>`; }
+  function viewGuide() {
+    const tab = ctx.gtab || "build";
+    const tabs = [["build", "🧱 Armar"], ["tenses", "⏱ Tiempos"], ["conj", "🔧 Conjugador"], ["patterns", "🧩 Moldes"], ["kate", "🤖 Con " + TEACHER]];
+    let body = "";
+    if (tab === "build") {
+      body = `<section class="card"><h2>🧱 El orden de una oración en inglés</h2>
+        <p>En inglés el orden de las piezas casi nunca cambia. Si lo aprendes, puedes armar cualquier oración con tu vocabulario:</p>
+        <div class="order">${G().order.map(([r, q, n, ex, note]) => `<div class="ord r-${r}"><b>${q}</b><span>${n}</span><small>${esc(ex)}</small></div>`).join('<span class="arrow">→</span>')}</div>
+        ${chips([["who", "I", "yo"], ["verb", "study", "estudio"], ["what", "English", "inglés"], ["where", "at home", "en casa"], ["when", "every day", "todos los días"]])}
+        <p class="center"><button class="icon" data-action="say" data-text="I study English at home every day.">🔊</button> <b>I study English at home every day.</b></p></section>
+      <section class="card"><h2>📏 7 reglas para no equivocarte</h2>${G().rules.map(([t, d], i) => `<div class="rule"><span class="rnum">${i + 1}</span><div><b>${t}</b><p>${d}</p></div></div>`).join("")}</section>
+      <section class="card"><h2>✍️ Ejemplos resueltos (del español al inglés)</h2><p class="muted">Así se piensa una oración: separa la idea en piezas y pon cada una en su lugar.</p>
+        ${G().examples.map((x) => `<div class="worked"><div class="w-es">🇪🇸 ${esc(x.es)}</div>${chips(x.blocks)}
+          <div class="w-en"><button class="icon" data-action="say" data-text="${esc(x.en)}">🔊</button> 🇺🇸 <b>${esc(x.en)}</b></div><p class="muted">${x.why}</p></div>`).join("")}</section>`;
+    } else if (tab === "tenses") {
+      const t = G().tenses.find((x) => x.id === (ctx.tense || "pres"));
+      body = `<section class="card"><div class="tchips">${G().tenses.map((x) => `<button class="chip-btn ${x.id === t.id ? "" : "ghost"}" data-action="pickTense" data-t="${x.id}">${esc(x.name)}</button>`).join("")}</div></section>
+        <section class="card"><h2>⏱ ${esc(t.name)} <span class="muted">(${esc(t.es)})</span></h2>
+          <p>📍 <b>Cuándo se usa:</b> ${esc(t.use)}</p><p>🔑 <b>Palabras que lo acompañan:</b> <i>${esc(t.words)}</i></p>
+          <div class="tform"><h3>✅ Afirmativo</h3>${t.aff.map(([a, b]) => `<div class="frow"><span class="blk r-who"><b>${esc(a)}</b></span><span class="blk r-verb"><b>${esc(b)}</b></span></div>`).join("")}
+          <h3>❌ Negativo</h3>${t.neg.map(([a, b]) => `<div class="frow"><span class="blk r-who"><b>${esc(a)}</b></span><span class="blk r-aux"><b>${esc(b)}</b></span></div>`).join("")}
+          <h3>❓ Pregunta</h3>${t.q.map(([a, b, c]) => `<div class="frow"><span class="blk r-aux"><b>${esc(a)}</b></span><span class="blk r-who"><b>${esc(b)}</b></span><span class="blk r-verb"><b>${esc(c)}</b></span></div>`).join("")}
+          <p>💬 <b>Respuesta corta:</b> ${esc(t.short)}</p><p>🔹 <b>Con “be”:</b> ${esc(t.be)}</p></div>
+          <h3>Ejemplos</h3>${t.ex.map(([en, es]) => `<div class="starter"><button class="icon" data-action="say" data-text="${esc(en)}">🔊</button><div><b>${esc(en)}</b><div class="muted">${esc(es)}</div></div></div>`).join("")}
+          <div class="ctx-row watch"><span>⚠️</span><div>${esc(t.tip)}</div></div>
+          <button class="btn" data-action="tryConj" data-t="${t.id}">🔧 Practicarlo en el conjugador</button></section>`;
+    } else if (tab === "conj") {
+      const cj = (ctx.cj = ctx.cj || { subj: "she", verb: "work", tense: "pres", type: "aff", wh: "", comp: "from home" });
+      const r = conjugate(cj);
+      const vinfo = G().verbs.find((v) => v[0] === cj.verb);
+      const tinfo = G().tenses.find((x) => x.id === cj.tense);
+      body = `<section class="card result"><div class="big-sent"><button class="icon" data-action="say" data-text="${esc(r.short || r.full)}">🔊</button> ${esc(r.full)}</div>
+          ${r.short ? `<p>🗣 <b>Al hablar (contraído):</b> ${esc(r.short)}</p>` : ""}
+          ${chips(r.parts)}
+          ${r.answer ? `<p>💬 <b>Respuesta corta:</b> ${esc(r.answer)}</p>` : ""}
+          <p class="muted">⏱ <b>${esc(tinfo.name)}</b>: ${esc(tinfo.use)} ${cj.verb === "be" && cj.tense === "cont" ? "<br>⚠️ “be” casi nunca se usa en -ing (being); usa el presente simple." : ""}</p>
+          ${vinfo ? `<p class="muted">📚 <b>${vinfo[0]}</b> (${vinfo[3]}) · pasado: <b>${vinfo[1]}</b> · participio: <b>${vinfo[2]}</b>${vinfo[1].endsWith("ed") ? " (regular)" : " (irregular: apréndelo de memoria)"}</p>` : ""}
+          <button class="btn small" data-action="cjCard">➕ Guardar esta oración en mis tarjetas</button></section>
+        <section class="card"><h2>🔧 Conjugador: arma tu oración</h2><p class="muted">Elige las piezas y mira cómo se arma la oración, pieza por pieza. Cambia una sola cosa a la vez para ver qué cambia.</p>
+        <div class="conj">
+          <label>¿Quién?<select data-action="cj" data-k="subj">${SUBJ.map(([e, es]) => `<option value="${e}" ${cj.subj === e ? "selected" : ""}>${e} — ${es}</option>`).join("")}</select></label>
+          <label>Verbo<select data-action="cj" data-k="verb">${G().verbs.map((v) => `<option value="${v[0]}" ${cj.verb === v[0] ? "selected" : ""}>${v[0]} — ${v[3]}</option>`).join("")}</select></label>
+          <label>Tiempo<select data-action="cj" data-k="tense">${G().tenses.map((x) => `<option value="${x.id}" ${cj.tense === x.id ? "selected" : ""}>${x.name}</option>`).join("")}</select></label>
+          <label>Tipo<select data-action="cj" data-k="type"><option value="aff" ${cj.type === "aff" ? "selected" : ""}>✅ Afirmativo</option><option value="neg" ${cj.type === "neg" ? "selected" : ""}>❌ Negativo</option><option value="q" ${cj.type === "q" ? "selected" : ""}>❓ Pregunta</option></select></label>
+          ${cj.type === "q" ? `<label>Palabra de pregunta<select data-action="cj" data-k="wh"><option value="">(ninguna: sí/no)</option>${["What", "Where", "When", "Why", "How often"].map((w) => `<option ${cj.wh === w ? "selected" : ""}>${w}</option>`).join("")}</select></label>` : ""}
+          <label>Resto (opcional)<input data-action="cjc" value="${esc(cj.comp)}" placeholder="${esc(vinfo ? vinfo[4] : "")}"></label>
+        </div></section>`;
+    } else if (tab === "patterns") {
+      body = `<section class="card"><h2>🧩 Moldes para armar frases</h2><p class="muted">Toma un molde y cambia el verbo por el que necesites. Así usas tu vocabulario sin pensar en la gramática.</p>
+        ${G().patterns.map(([m, es, ex, use]) => `<div class="pat"><div><b class="pm">${esc(m)}</b> <span class="muted">= ${esc(es)}</span></div>
+          <div><button class="icon" data-action="say" data-text="${esc(ex)}">🔊</button> <i>${esc(ex)}</i></div><small class="muted">${esc(use)}</small></div>`).join("")}</section>`;
+    } else {
+      const k = ctx.kb || {};
+      body = `<section class="card"><h2>🤖 Arma tu frase con ${TEACHER}</h2>
+        <p>Escribe en español lo que quieres decir. ${TEACHER} te lo arma en inglés de EE. UU., <b>pieza por pieza</b>, y te explica por qué va así.</p>
+        ${window.AI.enabled() ? `<form data-form="kateBuild"><textarea name="es" rows="3" placeholder="Ej: Quiero ir al cine con mi hermana el sábado en la noche.">${esc(k.es || "")}</textarea>
+          <button class="btn primary" ${k.busy ? "disabled" : ""}>${k.busy ? "Armando…" : "Armar en inglés"}</button></form>
+          ${k.res ? `<div class="kb-res">${k.res.en ? `<div class="big-sent"><button class="icon" data-action="say" data-text="${esc(k.res.en)}">🔊</button> ${esc(k.res.en)}</div>` : ""}
+            ${k.res.blocks.length ? chips(k.res.blocks) : ""}<div class="feedback">${md(k.res.rest)}</div>
+            ${k.res.en ? `<button class="btn small" data-action="kbCard">➕ Guardar en mis tarjetas</button>` : ""}</div>` : ""}`
+        : `<p class="muted">${window.ARTIFACT_MODE ? "El profesor IA no está disponible en esta vista. Abre la app con tu cuenta de Claude iniciada." : "Activa el profesor IA en Ajustes para usar esta parte."} Mientras tanto, mira los ejemplos resueltos en “🧱 Armar” y usa los “🧩 Moldes”.</p>`}
+      </section>`;
+    }
+    return `<section class="card hero slim"><h1>📐 Guía: cómo armar oraciones</h1><p class="muted">Vocabulario + orden + tiempo verbal = oraciones correctas.</p></section>
+      <div class="tabs five">${tabs.map(([k, n]) => `<button class="${tab === k ? "on" : ""}" data-action="gtab" data-t="${k}">${n}</button>`).join("")}</div>${body}`;
+  }
+
   // ───────────────────────── PROGRESO ─────────────────────────
   function viewProgress() {
     const unitsDone = Math.min(S.progress.unit, C.length);
@@ -1498,6 +1644,11 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
+      case "gtab": ctx.gtab = el.dataset.t; render(); break;
+      case "pickTense": ctx.tense = el.dataset.t; rerenderKeepScroll(); break;
+      case "tryConj": ctx.gtab = "conj"; ctx.cj = Object.assign(ctx.cj || { subj: "she", verb: "work", type: "aff", wh: "", comp: "from home" }, { tense: el.dataset.t }); render(); window.scrollTo(0, 0); break;
+      case "cjCard": { const r = conjugate(ctx.cj); const t = G().tenses.find((x) => x.id === ctx.cj.tense); toast(addCard("custom", r.short || r.full, t.name + " · " + t.es, "🔧 " + r.parts.map((p) => p[1]).join(" + ")) ? "Guardada en tus tarjetas" : "Ya estaba en tus tarjetas"); save(); break; }
+      case "kbCard": { const k = ctx.kb; toast(addCard("custom", k.res.en, k.res.es || k.es, "🤖 " + TEACHER) ? "Guardada en tus tarjetas" : "Ya estaba en tus tarjetas"); save(); break; }
       case "sayDialog": { const ls = JSON.parse(el.dataset.lines); speakLines(ls.map((t, i) => ({ text: t, voice: i % 2 }))); break; }
       case "wordAI": {
         const u = C[unitIndex(el.dataset.unit)]; const i = +el.dataset.i; const [en, es, ex] = u.vocab[i]; const out = $(`#wctx-${u.id}-${i}`);
@@ -1832,6 +1983,7 @@ Usa exactamente estas secciones:
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#celebrate").hidden) $("#celebrate").hidden = true; });
   document.addEventListener("change", (e) => {
     const el = e.target;
+    if (el.dataset.action === "cj") { ctx.cj[el.dataset.k] = el.value; if (el.dataset.k === "verb") { const v = G().verbs.find((x) => x[0] === el.value); ctx.cj.comp = v ? v[4] : ""; } if (el.dataset.k === "type" && el.value !== "q") ctx.cj.wh = ""; rerenderKeepScroll(); return; }
     if (el.dataset.action === "import" && el.files[0]) {
       const r = new FileReader();
       r.onload = () => { try { const d = JSON.parse(r.result); const key = S.settings.apiKey; S = { ...defaults(), ...d }; S.settings.apiKey = key; save(); toast("Datos importados"); go("today"); } catch (err) { toast("Archivo no válido"); } };
@@ -1840,6 +1992,10 @@ Usa exactamente estas secciones:
   });
   document.addEventListener("input", (e) => {
     if (e.target.name === "text" && $("#wc")) $("#wc").textContent = words(e.target.value).length + " palabras";
+    if (e.target.dataset && e.target.dataset.action === "cjc") {
+      ctx.cj.comp = e.target.value; const r = conjugate(ctx.cj); const b = $(".big-sent");
+      if (b) b.lastChild.textContent = " " + r.full; const sc = $(".result .sent"); if (sc) sc.outerHTML = chips(r.parts);
+    }
     if (e.target.id === "vsearch") {
       const q = e.target.value.toLowerCase().trim();
       document.querySelectorAll(".vrow").forEach((r) => { r.hidden = !!q && !r.dataset.search.includes(q); });
@@ -1888,6 +2044,32 @@ Usa exactamente estas secciones:
       dayLog().minutes += 20; touchStreak(); save();
       out.innerHTML = md(r.text); e.submitter.disabled = false;
       celebrate({ icon: "📝", title: "¡Tarea entregada!", sub: r.score != null ? `Nota: ${r.score}/10. Revisa la corrección debajo.` : "Revisa la corrección debajo.", xpBefore: xpBeforeHw, closeLabel: "Ver la corrección" }); return;
+    }
+    if (kind === "kateBuild") {
+      const es = (fd.get("es") || "").trim(); if (!es) return;
+      ctx.kb = { es, busy: true }; rerenderKeepScroll();
+      try {
+        const txt = await window.AI.explain({ level: currentLevel(), question: `La estudiante quiere decir en inglés (de Estados Unidos, natural, como lo diría un nativo): "${es}"
+Responde EXACTAMENTE con este formato:
+✅ oración en inglés | traducción literal al español
+🧱 pieza en inglés = pieza en español (función: quién / verbo / ayudante / qué / dónde / cuándo / conector)
+(una línea 🧱 por cada pieza, en el orden de la oración en inglés)
+## ¿Por qué se arma así?
+(3 a 5 viñetas cortas: orden, tiempo verbal, “to” entre verbos, preposiciones, diferencias con el español)
+## Otras formas naturales de decirlo
+(2 variaciones: una más casual y una más formal)` });
+        const res = { en: "", es: "", blocks: [], rest: [] };
+        const roleOf = (f) => /quién/i.test(f) ? "who" : /ayudante/i.test(f) ? "aux" : /verbo/i.test(f) ? "verb" : /dónde/i.test(f) ? "where" : /cuándo/i.test(f) ? "when" : /conector/i.test(f) ? "link" : "what";
+        txt.split("\n").forEach((l) => {
+          const t = l.trim();
+          if (t.startsWith("✅")) { const [en, es2] = t.replace(/^✅\s*/, "").split("|").map((x) => x.trim()); res.en = en; res.es = es2 || ""; }
+          else if (t.startsWith("🧱")) { const m = t.replace(/^🧱\s*/, "").match(/^(.*?)\s*=\s*(.*?)\s*\((?:función:\s*)?(.*?)\)\s*$/i); if (m) res.blocks.push([roleOf(m[3]), m[1], m[2]]); }
+          else res.rest.push(l);
+        });
+        res.rest = res.rest.join("\n");
+        ctx.kb = { es, res }; save();
+      } catch (err) { ctx.kb = { es }; toast(err.message); }
+      rerenderKeepScroll(); return;
     }
     if (kind === "goalDate") {
       S.settings.goalDate = fd.get("goalDate") || ""; save(); rerenderKeepScroll();

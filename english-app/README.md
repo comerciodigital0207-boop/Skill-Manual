@@ -51,3 +51,10 @@ Los datos se guardan en el dispositivo (usa Exportar/Importar para pasarlos a ot
 
 ## Cada palabra con su contexto
 Las 64 palabras y frases de A1 tienen una ficha de contexto: cuándo se usa, cómo se dice al hablar y cómo se escribe, cómo suena, un mini diálogo real de EE. UU. con audio, cómo armar tus propias frases y la confusión típica. Aparece en la clase, al voltear cada tarjeta de repaso y en “Mi vocabulario”. Desde A2, el profesor IA genera la ficha con la misma estructura.
+
+## 📐 Guía: cómo armar oraciones
+- **Armar:** el orden de las piezas (quién + verbo + qué + dónde + cuándo), 7 reglas clave y ejemplos resueltos del español al inglés, bloque por bloque.
+- **Tiempos:** presente simple y continuo, pasado, futuro con will y going to, presente perfecto y can, con fórmulas de afirmativo, negativo, pregunta y respuesta corta.
+- **Conjugador:** eliges quién, verbo (44 verbos comunes), tiempo y tipo, y ves la oración armada por piezas, la forma contraída y la respuesta corta.
+- **Moldes:** 18 estructuras para enchufar tu vocabulario (I want to…, I'd like to…, because, so, to + verbo…).
+- **Con Kate:** escribes en español y el profesor IA lo arma en inglés de EE. UU., pieza por pieza, con el porqué.

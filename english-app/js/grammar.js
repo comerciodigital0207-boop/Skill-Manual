@@ -1,0 +1,115 @@
+/* Guía de gramática: cómo armar oraciones, tiempos verbales, moldes y verbos para el conjugador.
+   Inglés de EE. UU. Explicaciones en español, simples y con el porqué. */
+window.GRAMMAR = {
+  // Las piezas de una oración en inglés, en su orden
+  order: [
+    ["who", "¿Quién?", "Sujeto", "I, you, she, my mom, Laura…", "Siempre va. En inglés nunca se omite (no existe “Am tired”)."],
+    ["verb", "¿Qué hace?", "Verbo(s)", "work, want to go, am, don't like…", "Va justo después del sujeto. Si hay dos verbos, casi siempre van unidos con “to”: want to go."],
+    ["what", "¿Qué / a quién?", "Complemento", "coffee, a friend, English…", "Lo que recibe la acción. Va después del verbo, nunca antes."],
+    ["where", "¿Dónde?", "Lugar", "to the park, at home, in Miami…", "El lugar va antes que el tiempo."],
+    ["when", "¿Cuándo?", "Tiempo", "tomorrow morning, every day, yesterday…", "El tiempo va al final (o al principio, para dar énfasis)."]
+  ],
+  rules: [
+    ["El sujeto siempre va", "En español decimos “Estoy cansada”. En inglés hay que decir quién: <b>I'm</b> tired. Para el clima y la hora se usa <b>it</b>: <i>It's cold. It's 3 o'clock.</i>"],
+    ["El orden casi nunca cambia", "Quién + verbo + qué + dónde + cuándo. <i>I study English at home every day.</i> En español el orden es libre; en inglés no."],
+    ["Dos verbos seguidos → “to” en medio", "<i>I want <b>to</b> go. I need <b>to</b> sleep. I'd like <b>to</b> visit.</i> Excepción: después de <b>can, will, should, must, let's</b> va el verbo solo: <i>I can go.</i>"],
+    ["El adjetivo va antes del sustantivo", "<i>a <b>big</b> house</i> (no “a house big”), <i>a <b>good</b> friend</i>. Y el adjetivo no tiene plural: <i>two big houses</i>."],
+    ["Preguntas: el ayudante va primero", "Con <i>be</i>: <b>Are</b> you tired? Con otros verbos: <b>Do</b> you work? <b>Did</b> you go? <b>Will</b> you come? La entonación sola no basta."],
+    ["Un solo “no” por oración", "<i>I <b>don't</b> have <b>any</b> money</i> (no “I don't have no money”). <i>I don't know <b>anything</b>.</i>"],
+    ["Une ideas con conectores", "<b>and</b> (y), <b>but</b> (pero), <b>so</b> (así que), <b>because</b> (porque), <b>when</b> (cuando), <b>to</b> (para + verbo), <b>if</b> (si), <b>or</b> (o)."]
+  ],
+  // Ejemplos resueltos: español → inglés, bloque por bloque
+  examples: [
+    { es: "Me gustaría ir al parque mañana en la mañana.", en: "I'd like to go to the park tomorrow morning.",
+      blocks: [["who", "I", "yo"], ["verb", "'d like to go", "me gustaría ir"], ["where", "to the park", "al parque"], ["when", "tomorrow morning", "mañana en la mañana"]],
+      why: "“Me gustaría” se dice <b>I'd like</b> (I would like). Como después viene otro verbo (ir), se une con <b>to</b>: I'd like <b>to</b> go. El lugar (to the park) va antes del tiempo (tomorrow morning). “Mañana en la mañana” es <b>tomorrow morning</b>, sin “in the”." },
+    { es: "Estoy cansada, quiero dormir un rato.", en: "I'm tired, so I want to take a nap.",
+      blocks: [["who", "I", "yo"], ["verb", "'m", "estoy"], ["what", "tired", "cansada"], ["link", "so", "así que"], ["who", "I", "yo"], ["verb", "want to take", "quiero tomar"], ["what", "a nap", "una siesta"]],
+      why: "“Estoy” + cómo te sientes = <b>I'm</b> + adjetivo (tired). Para unir las dos ideas usa <b>so</b> (así que) o empieza otra oración. “Dormir un rato” suena natural como <b>take a nap</b> (tomar una siesta) o <b>sleep for a bit</b>. Ojo: el sujeto <b>I</b> se repite en la segunda parte." },
+    { es: "Quiero visitar a un amigo para saber cómo está de salud, porque sé que estaba un poco enfermo.", en: "I want to visit a friend to see how he's feeling, because I know he was a little sick.",
+      blocks: [["who", "I", "yo"], ["verb", "want to visit", "quiero visitar"], ["what", "a friend", "a un amigo"], ["link", "to see", "para saber"], ["what", "how he's feeling", "cómo se siente"], ["link", "because", "porque"], ["who", "I", "yo"], ["verb", "know", "sé"], ["who", "he", "él"], ["verb", "was", "estaba"], ["what", "a little sick", "un poco enfermo"]],
+      why: "“Para + verbo” se dice <b>to</b> + verbo (to see). “Cómo está de salud” suena natural como <b>how he's feeling</b>. Fíjate que en la pregunta indirecta no se invierte el orden: how <b>he is</b> feeling (no “how is he feeling”). “Porque” = <b>because</b>, y cada idea lleva su sujeto (I know, he was). “Visitar a alguien” va sin “to”: visit <b>a friend</b>." },
+    { es: "Ayer fui al supermercado con mi mamá.", en: "I went to the grocery store with my mom yesterday.",
+      blocks: [["who", "I", "yo"], ["verb", "went", "fui"], ["where", "to the grocery store", "al supermercado"], ["what", "with my mom", "con mi mamá"], ["when", "yesterday", "ayer"]],
+      why: "“Fui” es pasado de <b>go</b>: <b>went</b> (irregular). El tiempo (yesterday) puede ir al final o al inicio: <i>Yesterday I went…</i>" },
+    { es: "¿Quieres tomar un café conmigo después del trabajo?", en: "Do you want to grab a coffee with me after work?",
+      blocks: [["verb", "Do", "(ayudante de pregunta)"], ["who", "you", "tú"], ["verb", "want to grab", "quieres tomar"], ["what", "a coffee", "un café"], ["what", "with me", "conmigo"], ["when", "after work", "después del trabajo"]],
+      why: "Pregunta con un verbo normal (want) → el ayudante <b>Do</b> va primero. “Tomar un café” en EE. UU. se dice <b>grab a coffee</b>. “Conmigo” = <b>with me</b>." },
+    { es: "No puedo ir hoy porque tengo que trabajar.", en: "I can't go today because I have to work.",
+      blocks: [["who", "I", "yo"], ["verb", "can't go", "no puedo ir"], ["when", "today", "hoy"], ["link", "because", "porque"], ["who", "I", "yo"], ["verb", "have to work", "tengo que trabajar"]],
+      why: "Después de <b>can't</b> el verbo va solo (sin to): can't <b>go</b>. “Tener que” = <b>have to</b> + verbo." }
+  ],
+  // Moldes para enchufar tu vocabulario
+  patterns: [
+    ["I want to + verbo", "Quiero + verbo", "I want to learn English.", "Para decir lo que quieres hacer."],
+    ["I'd like to + verbo", "Me gustaría + verbo", "I'd like to visit New York.", "Más amable que “I want”. Ideal para pedir o planear."],
+    ["I need to + verbo", "Necesito + verbo", "I need to rest.", "Algo necesario o urgente."],
+    ["I have to + verbo", "Tengo que + verbo", "I have to work tomorrow.", "Una obligación."],
+    ["I'm going to + verbo", "Voy a + verbo", "I'm going to call my mom.", "Planes. Al hablar suena “I'm gonna”."],
+    ["I can / I can't + verbo", "Puedo / No puedo", "I can't come today.", "Habilidad o posibilidad. Sin “to” después."],
+    ["Can you + verbo?", "¿Puedes…?", "Can you help me?", "Para pedir un favor."],
+    ["Do you want to + verbo?", "¿Quieres…?", "Do you want to go out?", "Para invitar."],
+    ["Let's + verbo", "Vamos a… / ¡Hagamos…!", "Let's go to the park!", "Para proponer algo juntos."],
+    ["I'm + adjetivo", "Estoy / Soy…", "I'm tired. I'm happy.", "Cómo estás o cómo eres."],
+    ["I feel + adjetivo", "Me siento…", "I feel better today.", "Emociones y salud."],
+    ["I like + verbo-ing", "Me gusta + verbo", "I like cooking.", "Gustos. También “I love dancing”."],
+    ["I think (that)…", "Creo que…", "I think it's a good idea.", "Para dar tu opinión."],
+    ["…because…", "…porque…", "I'm happy because it's Friday.", "Para dar la razón."],
+    ["…so…", "…así que…", "I was tired, so I went to bed.", "Para dar la consecuencia."],
+    ["…to + verbo (para)", "…para + verbo", "I'm saving money to travel.", "El propósito. Nunca “for travel”."],
+    ["When…, …", "Cuando…, …", "When I get home, I'll call you.", "Para conectar momentos."],
+    ["How about + verbo-ing?", "¿Qué tal si…?", "How about watching a movie?", "Para sugerir."]
+  ],
+  // Tiempos verbales
+  tenses: [
+    { id: "pres", name: "Presente simple", es: "trabajo, como, vivo", use: "Rutinas, hábitos, cosas que siempre son verdad.", words: "every day, usually, always, sometimes, never, on Mondays",
+      aff: [["I/You/We/They", "work"], ["He/She/It", "works (+s)"]], neg: [["I/You/We/They", "don't work"], ["He/She/It", "doesn't work"]], q: [["Do", "I/you/we/they", "work?"], ["Does", "he/she/it", "work?"]],
+      short: "Yes, I do. / No, she doesn't.", be: "I am · you are · he is → I'm not · Are you…?",
+      ex: [["She works at a hospital.", "Ella trabaja en un hospital."], ["I don't drink coffee.", "No tomo café."], ["Do you live here?", "¿Vives aquí?"]],
+      tip: "Con he/she/it el verbo lleva -s, pero en negativo y pregunta la -s se pasa a “does”: She doesn't work (no “doesn't works”)." },
+    { id: "cont", name: "Presente continuo", es: "estoy trabajando", use: "Lo que pasa ahora mismo o estos días, y planes ya organizados.", words: "now, right now, at the moment, today, this week",
+      aff: [["I", "am working"], ["He/She/It", "is working"], ["You/We/They", "are working"]], neg: [["I", "'m not working"], ["He/She", "isn't working"], ["You/We/They", "aren't working"]], q: [["Am", "I", "working?"], ["Is", "he/she", "working?"], ["Are", "you/we/they", "working?"]],
+      short: "Yes, I am. / No, he isn't.", be: "Se forma con be + verbo-ing.",
+      ex: [["I'm watching TV right now.", "Estoy viendo televisión ahora."], ["She isn't working today.", "Ella no está trabajando hoy."], ["What are you doing?", "¿Qué estás haciendo?"]],
+      tip: "Verbos de sentir o saber casi nunca van en -ing: I know, I like, I want (no “I'm wanting”)." },
+    { id: "past", name: "Pasado simple", es: "trabajé, fui, comí", use: "Acciones terminadas en el pasado (ayer, la semana pasada, en 2020).", words: "yesterday, last night, last week, ago, in 2020",
+      aff: [["Todos", "worked (+ed) / went (irregular)"]], neg: [["Todos", "didn't work / didn't go"]], q: [["Did", "todos", "work? / go?"]],
+      short: "Yes, I did. / No, they didn't.", be: "I/he/she/it was · you/we/they were → wasn't / weren't · Were you…?",
+      ex: [["I went to the beach last weekend.", "Fui a la playa el fin de semana pasado."], ["We didn't see the movie.", "No vimos la película."], ["Did you sleep well?", "¿Dormiste bien?"]],
+      tip: "Con “did/didn't” el verbo vuelve a la forma base: Did you go? (no “Did you went?”)." },
+    { id: "will", name: "Futuro con will", es: "trabajaré / lo hago (ahora decido)", use: "Decisiones del momento, promesas, ofrecimientos y predicciones.", words: "tomorrow, next week, I think…, probably",
+      aff: [["Todos", "will work ('ll work)"]], neg: [["Todos", "won't work"]], q: [["Will", "todos", "work?"]],
+      short: "Yes, I will. / No, I won't.", be: "I'll be there. · It won't be easy.",
+      ex: [["I'll call you later.", "Te llamo más tarde."], ["It won't take long.", "No va a tardar."], ["Will you help me?", "¿Me ayudas?"]],
+      tip: "Después de will, verbo sin “to”: I'll go (no “I'll to go”). Al hablar casi siempre se contrae: I'll, you'll, she'll." },
+    { id: "goingto", name: "Futuro con going to", es: "voy a trabajar", use: "Planes que ya decidiste antes y predicciones con evidencia.", words: "tomorrow, tonight, this weekend, next year",
+      aff: [["I", "am going to work"], ["He/She", "is going to work"], ["You/We/They", "are going to work"]], neg: [["I", "'m not going to work"], ["He/She", "isn't going to work"]], q: [["Are", "you", "going to work?"], ["Is", "she", "going to work?"]],
+      short: "Yes, I am. / No, she isn't.", be: "I'm going to be late.",
+      ex: [["I'm going to visit my parents this weekend.", "Voy a visitar a mis papás este fin de semana."], ["It's going to rain.", "Va a llover."], ["What are you going to do tonight?", "¿Qué vas a hacer esta noche?"]],
+      tip: "Al hablar suena “gonna”: I'm gonna call you. Así lo vas a escuchar todo el tiempo." },
+    { id: "perf", name: "Presente perfecto", es: "he trabajado, he ido", use: "Experiencias de vida (sin fecha) y cosas que empezaron antes y siguen.", words: "ever, never, already, yet, just, for, since",
+      aff: [["I/You/We/They", "have worked ('ve)"], ["He/She/It", "has worked ('s)"]], neg: [["I/You/We/They", "haven't worked"], ["He/She/It", "hasn't worked"]], q: [["Have", "you/they", "worked?"], ["Has", "he/she", "worked?"]],
+      short: "Yes, I have. / No, she hasn't.", be: "I've been to Mexico. (He estado en México)",
+      ex: [["I've never been to New York.", "Nunca he ido a Nueva York."], ["She has lived here for two years.", "Ella vive aquí desde hace dos años."], ["Have you ever tried sushi?", "¿Alguna vez has probado sushi?"]],
+      tip: "Si dices cuándo (yesterday, in 2019) se usa pasado simple, no este tiempo." },
+    { id: "can", name: "Can (poder)", es: "puedo, sé (hacer algo)", use: "Habilidad, posibilidad y pedir permiso o favores.", words: "—",
+      aff: [["Todos", "can work"]], neg: [["Todos", "can't work"]], q: [["Can", "todos", "work?"]],
+      short: "Yes, I can. / No, I can't.", be: "It can be hard.",
+      ex: [["I can swim.", "Sé nadar."], ["I can't come tonight.", "No puedo venir esta noche."], ["Can I sit here?", "¿Me puedo sentar aquí?"]],
+      tip: "Can no lleva -s ni “to”: She can drive (no “She cans to drive”)." }
+  ],
+  // Verbos para el conjugador: [base, pasado, participio, significado, complemento sugerido]
+  verbs: [
+    ["be", "was", "been", "ser / estar", "happy"], ["have", "had", "had", "tener", "a car"], ["do", "did", "done", "hacer", "my homework"], ["go", "went", "gone", "ir", "to work"],
+    ["get", "got", "gotten", "conseguir / llegar", "home early"], ["make", "made", "made", "hacer / preparar", "dinner"], ["say", "said", "said", "decir", "hello"], ["see", "saw", "seen", "ver", "my friends"],
+    ["know", "knew", "known", "saber / conocer", "the answer"], ["think", "thought", "thought", "pensar", "about it"], ["take", "took", "taken", "tomar / llevar", "the bus"], ["come", "came", "come", "venir", "to the party"],
+    ["want", "wanted", "wanted", "querer", "a coffee"], ["like", "liked", "liked", "gustar", "pizza"], ["need", "needed", "needed", "necesitar", "help"], ["work", "worked", "worked", "trabajar", "from home"],
+    ["live", "lived", "lived", "vivir", "in Miami"], ["eat", "ate", "eaten", "comer", "breakfast"], ["drink", "drank", "drunk", "tomar / beber", "water"], ["sleep", "slept", "slept", "dormir", "well"],
+    ["buy", "bought", "bought", "comprar", "groceries"], ["pay", "paid", "paid", "pagar", "the bill"], ["call", "called", "called", "llamar", "my mom"], ["visit", "visited", "visited", "visitar", "a friend"],
+    ["study", "studied", "studied", "estudiar", "English"], ["watch", "watched", "watched", "ver (TV)", "a movie"], ["play", "played", "played", "jugar / tocar", "soccer"], ["cook", "cooked", "cooked", "cocinar", "pasta"],
+    ["read", "read", "read", "leer", "a book"], ["write", "wrote", "written", "escribir", "an email"], ["speak", "spoke", "spoken", "hablar (un idioma)", "English"], ["talk", "talked", "talked", "hablar / conversar", "to my sister"],
+    ["drive", "drove", "driven", "manejar", "to work"], ["run", "ran", "run", "correr", "in the park"], ["swim", "swam", "swum", "nadar", "in the pool"], ["travel", "traveled", "traveled", "viajar", "to New York"],
+    ["leave", "left", "left", "irse / salir", "the office"], ["find", "found", "found", "encontrar", "my keys"], ["feel", "felt", "felt", "sentirse", "better"], ["give", "gave", "given", "dar", "a gift"],
+    ["help", "helped", "helped", "ayudar", "my neighbor"], ["try", "tried", "tried", "intentar / probar", "sushi"], ["stop", "stopped", "stopped", "parar / dejar", "working"], ["plan", "planned", "planned", "planear", "a trip"]
+  ]
+};
