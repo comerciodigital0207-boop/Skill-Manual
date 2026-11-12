@@ -352,3 +352,10 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .chat-form input { min-width: 0; }
 .chat-end { background: var(--good-soft); border-radius: 12px; padding: 12px; margin: 8px 0; }
 .chat-end h3 { margin: 0 0 6px; color: var(--good); }
+.stages { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0 2px; }
+.stg { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: .75rem; font-weight: 700; background: var(--line); color: var(--muted); }
+.stg.d { background: var(--good); color: #fff; }
+.stg.n { background: var(--primary); color: #fff; box-shadow: 0 0 0 3px var(--primary-soft); }
+.stage-now { margin: 2px 0 8px; font-size: .92rem; }
+.plan { margin: 4px 0 8px; padding-left: 1.4rem; columns: 2; column-gap: 18px; }
+@media (max-width: 480px) { .plan { columns: 1; } }
