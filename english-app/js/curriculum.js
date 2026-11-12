@@ -794,3 +794,47 @@ window.RESOURCES = {
     { t: "Documentales y entrevistas sin subtítulos en español", y: "long form interview english", s: "" }
   ]
 };
+
+/* Traducción de cada reto de speaking, para entender exactamente qué se pide */
+window.SPEAKING_ES = {
+  "a1-1": "Preséntate: saluda, di tu nombre, cómo estás y despídete.",
+  "a1-2": "Habla de ti: de dónde eres, dónde vives, tu edad, tu trabajo y tu familia.",
+  "a1-3": "Di tu número de teléfono, a qué hora te levantas y te acuestas, y pregunta el precio de 3 cosas.",
+  "a1-4": "Describe tu día de la mañana a la noche usando al menos 6 verbos.",
+  "a1-5": "Describe a 3 personas de tu familia o amigos: dónde viven, qué hacen y qué les gusta.",
+  "a1-6": "Actúa la escena: estás en un café. Pide comida y bebida, pregunta el precio, pide que te repitan y pide la cuenta.",
+  "a1-7": "Describe tu casa y tu barrio: qué hay y dónde están las cosas.",
+  "a1-8": "Cuenta lo que hiciste ayer, de la mañana a la noche.",
+  "a2-1": "Describe un día normal de tu semana. ¿Qué es diferente esta semana?",
+  "a2-2": "Cuenta tus últimas vacaciones o un fin de semana especial. ¿A dónde fuiste? ¿Qué pasó?",
+  "a2-3": "¿Cuáles son tus planes para el próximo mes y tus metas de este año? ¿Por qué son importantes?",
+  "a2-4": "Compara tu ciudad con otra que conozcas. ¿Cuál es mejor para vivir y por qué?",
+  "a2-5": "Actúa la escena: pides comida en un restaurante. Pregunta por el menú, pide y solicita la cuenta.",
+  "a2-6": "Habla de 3 cosas que has hecho en tu vida y 3 que nunca has hecho pero quieres hacer.",
+  "a2-7": "Da consejos a alguien que quiere aprender inglés rápido. ¿Qué debería y qué no debería hacer?",
+  "a2-8": "Explica cómo llegar de tu casa a tu lugar favorito de la ciudad.",
+  "b1-1": "Cuenta algo inesperado que te pasó. Usa 'while', 'when' y 'suddenly'.",
+  "b1-2": "¿Qué ha cambiado en tu vida el último año? ¿Qué has logrado y qué no has hecho todavía?",
+  "b1-3": "¿Qué harías si pudieras vivir en cualquier país? ¿Qué harás si llegas a B2 este año?",
+  "b1-4": "Describe cómo se hace un producto típico de tu país (café, chocolate…). Usa la voz pasiva.",
+  "b1-5": "Describe a una persona que te ha influido y un lugar especial para ti.",
+  "b1-6": "Cuenta una conversación reciente con un amigo, familiar o compañero (lo que te dijo).",
+  "b1-7": "Habla de pasatiempos que disfrutas, cosas que evitas hacer y algo que decidiste hacer hace poco.",
+  "b1-8": "¿En qué es diferente tu vida ahora comparada con hace 10 años? ¿Qué solías hacer que ya no haces?",
+  "b2-1": "Habla de una decisión que cambió tu vida. ¿Qué habría pasado si hubieras elegido distinto?",
+  "b2-2": "Mira una foto de tu celular y especula: quiénes son, dónde están, qué pudo haber pasado antes.",
+  "b2-3": "¿Qué has estado haciendo últimamente para mejorar tu vida? Habla de algo que nunca habías hecho antes de este año.",
+  "b2-4": "¿Qué servicios pagas? ¿Qué cosas mandas a hacer en vez de hacerlas tú? ¿Por qué?",
+  "b2-5": "Habla de tres deseos sobre tu presente, un arrepentimiento de tu pasado y algo que te molesta.",
+  "b2-6": "Describe tus relaciones en el trabajo o el estudio. Usa al menos 6 phrasal verbs.",
+  "b2-7": "Da tu opinión: ¿el trabajo remoto debería ser lo normal? Argumentos a favor y en contra, con conectores.",
+  "b2-8": "Cuenta una reunión o discusión que presenciaste usando al menos 6 verbos de reporte.",
+  "c1-1": "Cuenta una historia personal dramática usando al menos 4 inversiones (Never have I…, Little did I know…).",
+  "c1-2": "Habla de lo que te encanta y lo que te frustra de tu trabajo o estudios, usando cleft sentences.",
+  "c1-3": "Da feedback diplomático a la propuesta (imaginaria) de un colega: 2 puntos fuertes y 2 débiles, con cortesía.",
+  "c1-4": "Resume una noticia reciente en menos de 90 segundos usando participle clauses.",
+  "c1-5": "Explica un reto que enfrentaste en el trabajo o el estudio usando al menos 5 idioms o collocations.",
+  "c1-6": "Describe dónde estarás y qué habrás logrado en 5 años. Sé preciso.",
+  "c1-7": "Di el mismo mensaje dos veces: primero a un amigo (informal) y luego a un gerente de empresa (formal).",
+  "c1-8": "Debate 2 minutos: 'La IA creará más empleos de los que destruye'. Concede un punto y refútalo."
+};

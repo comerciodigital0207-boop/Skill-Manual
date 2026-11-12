@@ -155,9 +155,13 @@
       }
       onText((finalText + interim).trim());
     };
-    rec.onerror = (e) => { if (e.error === "not-allowed") toast("Permite el uso del micrófono para practicar speaking"); };
+    rec.onerror = (e) => {
+      if (e.error === "no-speech" || e.error === "aborted") return;
+      micBroken = true; // a partir de ahora, modo escribir con instrucciones claras
+      toast(e.error === "not-allowed" ? "No hay permiso para el micrófono. Te paso al modo escribir." : "El micrófono no funcionó. Te paso al modo escribir.");
+    };
     rec.onend = () => { if (!stopped) { try { rec.start(); } catch (e) { onEnd && onEnd(finalText.trim()); } } else onEnd && onEnd(finalText.trim()); };
-    try { rec.start(); } catch (e) { toast("El micrófono no está disponible aquí. Puedes escribir tu respuesta."); return null; }
+    try { rec.start(); } catch (e) { micBroken = true; toast("El micrófono no está disponible aquí. Te paso al modo escribir."); setTimeout(rerenderKeepScroll, 50); return null; }
     return { stop() { stopped = true; rec.stop(); }, get text() { return finalText.trim(); } };
   }
 
@@ -794,32 +798,67 @@
     </section>` + resourcesBlock(u) + `<section class="card"><p class="muted">Tarea de escucha: mira el video o episodio sugerido 10-15 min y anota 5 frases nuevas en tu cuaderno.</p>
       <button class="btn primary big" data-action="finishStep" data-need="listen">Terminar clase ✔</button></section>`;
   }
-  function speakingPanel(prompt, id) {
+  // ¿Se puede usar el micrófono aquí? "yes" | "no" | "checking"
+  let micBroken = false;
+  function micMode() {
+    if (micBroken) return "no";
+    if (window.ARTIFACT_MODE) return window.MIC_STATE || "checking";
+    return SR ? "yes" : "no";
+  }
+  const minWords = (u) => (u.level === "A1" ? 25 : 45);
+  function speakingPanel(u, id) {
     const sp = (ctx.sp = ctx.sp || {});
     const st = (sp[id] = sp[id] || { text: "", secs: 0, feedback: "", score: null });
+    ctx.writeMode = ctx.writeMode || {};
+    const mic = micMode();
+    const writing = mic === "no" || ctx.writeMode[id];
+    const n = words(st.text).length, need = minWords(u);
+    const recording = ctx.recording === id;
+    const es = (window.SPEAKING_ES || {})[u.id] || "";
     return `<div class="speak">
-      <p class="prompt">🎯 ${esc(prompt)}</p>
-      <div class="row"><button class="btn primary" data-action="rec" data-id="${id}">${ctx.recording === id ? "⏹ Terminar" : "🎙 Hablar"}</button>
-      <span class="timer" id="timer-${id}">${ctx.recording === id ? "grabando…" : st.secs ? st.secs + " s" : "Meta: 60-120 s"}</span></div>
-      <details class="typed" ${st.typed ? "open" : ""}><summary>¿Sin micrófono? Escribe lo que dirías</summary>
-        <form data-form="typedSpeak" data-id="${id}"><textarea name="t" rows="4" placeholder="Answer in English...">${st.typed ? esc(st.text) : ""}</textarea><button class="btn small">Usar este texto</button></form></details>
-      <div class="transcript" id="tr-${id}">${esc(st.text) || '<span class="muted">Tu transcripción aparecerá aquí…</span>'}</div>
-      ${st.text && ctx.recording !== id ? `<div class="chips"><span class="chip">${words(st.text).length} palabras</span><span class="chip">${st.secs ? Math.round((words(st.text).length / st.secs) * 60) : 0} palabras/min</span><span class="chip">${new Set(words(st.text)).size} palabras distintas</span></div>
-        ${window.AI.enabled() ? `<button class="btn" data-action="aiSpeak" data-id="${id}" data-prompt="${esc(prompt)}">🤖 Feedback del profesor IA</button>` : `<p class="muted">Autoevaluación: ¿usaste la gramática de la unidad? ¿hablaste más de 60 s sin parar? ¿usaste 3+ palabras nuevas? (Activa el profesor IA en Ajustes para feedback detallado.)</p>`}` : ""}
-      <div class="feedback" id="fb-${id}">${st.feedback ? md(st.feedback) : ""}</div>
+      <div class="sstep"><span class="snum">1</span><div class="sbody"><b>Qué te piden</b>
+        <p class="prompt"><button class="icon" data-action="say" data-text="${esc(u.speaking)}" aria-label="Escuchar">🔊</button> ${esc(u.speaking)}</p>
+        ${es ? `<p class="muted">🇪🇸 ${esc(es)}</p>` : ""}</div></div>
+
+      <div class="sstep"><span class="snum">2</span><div class="sbody"><b>Prepárate (30 segundos)</b>
+        <p>Piensa 3 ideas sobre el tema. Intenta usar estas palabras: ${u.vocab.slice(0, 5).map((v) => `<span class="pill">${esc(v[0])}</span>`).join(" ")}</p>
+        ${u.model ? `<div class="model"><b>Ejemplo para guiarte:</b> escúchalo y repítelo 2 veces. Luego dilo cambiando los datos por los tuyos.
+          <p><button class="icon" data-action="say" data-text="${esc(u.model)}" aria-label="Escuchar ejemplo">🔊</button> ${esc(u.model)}</p></div>` : ""}</div></div>
+
+      <div class="sstep"><span class="snum">3</span><div class="sbody"><b>Responde en voz alta</b> <span class="muted">(mínimo ${need} palabras)</span>
+        ${writing ? `
+          <div class="notice">${mic === "no" ? `<b>🎙 El micrófono no funciona en este dispositivo</b> (o no diste permiso). No pasa nada, hazlo así:` : `<b>✍️ Modo escribir:</b>`}
+            <ol><li><b>Di tu respuesta en voz alta</b>, aunque nadie te escuche. Hablar es la práctica más importante.</li>
+            <li><b>Escríbela aquí abajo</b>, igual a como la dijiste, para revisarla.</li></ol>
+            <p class="muted">💡 Truco: en el celular, toca el 🎤 de tu teclado y dicta en inglés. Así escribe por ti.</p></div>
+          <form data-form="typedSpeak" data-id="${id}"><textarea name="t" rows="5" placeholder="Write your answer in English here…">${esc(st.text)}</textarea>
+            <button class="btn primary">Listo, revisar mi respuesta</button></form>
+          ${mic !== "no" ? `<button class="link" data-action="writeMode" data-id="${id}" data-on="0">🎙 Mejor usar el micrófono</button>` : ""}`
+        : mic === "checking" ? `<p class="muted">Revisando el micrófono…</p><button class="link" data-action="writeMode" data-id="${id}" data-on="1">✍️ Prefiero escribir mi respuesta</button>`
+        : `<p>Toca <b>Grabar</b>, habla en inglés y toca <b>Terminar</b> cuando acabes. Lo que digas aparecerá escrito.</p>
+          <div class="row"><button class="btn primary big-rec ${recording ? "rec-on" : ""}" data-action="rec" data-id="${id}">${recording ? "⏹ Terminar" : "🎙 Grabar"}</button>
+          <span class="timer" id="timer-${id}">${recording ? "⏺ grabando…" : st.secs ? st.secs + " s" : "Meta: 1 a 2 minutos"}</span></div>
+          <div class="transcript" id="tr-${id}">${esc(st.text) || '<span class="muted">Aquí aparecerá lo que digas…</span>'}</div>
+          <button class="link" data-action="writeMode" data-id="${id}" data-on="1">¿El micrófono no funciona? Escribe tu respuesta</button>`}
+      </div></div>
+
+      <div class="sstep ${st.text && !recording ? "" : "dim"}"><span class="snum">4</span><div class="sbody"><b>Tu resultado</b>
+        ${st.text && !recording ? `
+          <p>${n >= need ? `<span class="pill good">✅ ${n} palabras: cumples el mínimo</span>` : `<span class="pill bad">${n} de ${need} palabras: te faltan ${need - n}</span>`}</p>
+          ${n < need ? `<p class="muted">${TEACHER}: “Say more! Añade detalles: ¿cuándo?, ¿dónde?, ¿con quién?, ¿por qué?”</p>` : ""}
+          <p class="muted">Revisa: ¿usaste la gramática de la clase? ¿usaste palabras nuevas? ¿lo dijiste en voz alta?</p>
+          ${window.AI.enabled() ? `<button class="btn" data-action="aiSpeak" data-id="${id}" data-unit="${u.id}">🤖 Que ${TEACHER} corrija mi respuesta</button>` : ""}
+          <div class="feedback" id="fb-${id}">${st.feedback ? md(st.feedback) : ""}</div>`
+        : `<p class="muted">Aparece cuando termines el paso 3.</p>`}
+      </div></div>
     </div>`;
   }
   function stepSpeak(u) {
-    return `<section class="card"><h2>🎤 Speaking</h2>
-      ${u.model ? `<div class="model"><b>1. Escucha y repite este ejemplo</b> (2 veces, en voz alta)
-        <p><button class="icon" data-action="say" data-text="${esc(u.model)}">🔊</button> ${esc(u.model)}</p>
-        <b>2. Ahora dilo con TU información</b> (cambia nombres, lugares, horas)</div>` : ""}
-      <p class="muted">Tips: antes de hablar, piensa 30 s en 3 ideas. Usa la gramática <b>${esc(u.grammar.name)}</b> y al menos 3 palabras: ${u.vocab.slice(0, 5).map((v) => `<span class="pill">${esc(v[0])}</span>`).join(" ")}</p>
-      ${speakingPanel(u.speaking, "unit-" + u.id)}
+    return `<section class="card"><h2>🎤 Speaking: ${esc(u.title)}</h2>
+      ${speakingPanel(u, "unit-" + u.id)}
     </section>
-    <section class="card"><h2>💬 Conversación</h2><p>Practica una conversación libre sobre este tema en la pestaña Speaking.</p>
-      <button class="btn" data-action="go" data-view="speaking">Abrir conversación</button></section>
-    <section class="card"><button class="btn primary big" data-action="finishStep" data-need="speak">Terminar clase ✔</button></section>`;
+    <section class="card"><button class="btn primary big" data-action="finishStep" data-need="speak">Terminar clase ✔</button>
+      <p class="muted center">Para terminar necesitas al menos ${minWords(u)} palabras en el paso 3.</p></section>`;
   }
   function stepTest(u) {
     if (!ctx.testItems) {
@@ -1005,20 +1044,24 @@ SCORE: ${score}/10`;
   ];
   function viewSpeaking() {
     const done = C.slice(0, Math.max(1, S.progress.unit + 1));
-    if (!ctx.freePrompt) ctx.freePrompt = done[Math.floor(Math.random() * done.length)].speaking;
+    if (!ctx.freeUnit) ctx.freeUnit = done[Math.floor(Math.random() * done.length)].id;
+    const fu = C[unitIndex(ctx.freeUnit)];
     const chat = (ctx.chat = ctx.chat || { scenario: SCENARIOS[0], history: [] });
     return `<section class="card hero slim"><h1>🎤 Speaking</h1><p class="muted">Practica todos los días: 2 minutos hablando valen más que 20 leyendo.</p></section>
-      <section class="card"><h2>🎯 Reto libre</h2>${speakingPanel(ctx.freePrompt, "free")}
-        <button class="link" data-action="newPrompt">Otro tema</button></section>
+      <section class="card"><h2>🎯 Reto de speaking</h2>
+        <p class="muted">Practica hablar 1 o 2 minutos sobre un tema de tus clases. Sigue los 4 pasos en orden.</p>
+        ${speakingPanel(fu, "free")}
+        <button class="btn small" data-action="newPrompt">🔄 Darme otro tema</button></section>
       <section class="card"><h2>💬 Conversación con profesor IA</h2>
         ${window.AI.enabled() ? `
         <label>Situación<select data-action="scenario">${SCENARIOS.map((s) => `<option ${s === chat.scenario ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
         <div class="chat" id="chat">${chat.history.length ? chat.history.map((m) => `<div class="msg ${m.role}">${m.role === "assistant" ? `<button class="icon" data-action="say" data-text="${esc(m.content.split("💡")[0])}">🔊</button>` : ""}${md(m.content)}</div>`).join("") : '<p class="muted">Pulsa 🎙 y saluda para empezar (o escribe).</p>'}</div>
         <form data-form="chat" class="row"><input name="m" id="chatInput" placeholder="Speak or type in English…" autocomplete="off">
-          <button type="button" class="btn small" data-action="chatMic">${ctx.recording === "chat" ? "⏹" : "🎙"}</button><button class="btn small primary">Enviar</button></form>
+          ${micMode() === "yes" ? `<button type="button" class="btn small" data-action="chatMic">${ctx.recording === "chat" ? "⏹" : "🎙"}</button>` : ""}<button class="btn small primary">Enviar</button></form>
+        ${micMode() === "no" ? `<p class="muted">El micrófono no funciona en este dispositivo: escribe tus respuestas (o dicta con el 🎤 del teclado del celular) y léelas en voz alta.</p>` : ""}
         <button class="link" data-action="resetChat">Reiniciar conversación</button>`
-        : `<p>Para conversar con un profesor que te responde con voz y te corrige en tiempo real, añade tu API key de Claude en <a href="#" data-action="go" data-view="settings">Ajustes</a>.</p>
-           <p class="muted">Sin IA puedes: hacer shadowing en cada clase, el reto libre de arriba y practicar con los podcasts recomendados (repite en voz alta lo que oyes).</p>`}
+        : `<p>${window.ARTIFACT_MODE ? "El profesor IA no está disponible en esta vista. Abre la app con tu cuenta de Claude iniciada." : `Para conversar con un profesor que te responde con voz y te corrige en tiempo real, añade tu API key de Claude en <a href="#" data-action="go" data-view="settings">Ajustes</a>.`}</p>
+           <p class="muted">Mientras tanto puedes: hacer shadowing en cada clase, el reto de speaking de arriba y practicar con los podcasts recomendados (repite en voz alta lo que oyes).</p>`}
       </section>`;
   }
 
@@ -1224,7 +1267,8 @@ Usa exactamente estas secciones:
         const id = el.dataset.id; const st = ctx.sp[id]; const fb = $("#fb-" + id);
         el.disabled = true; fb.innerHTML = '<p class="muted">El profesor está escuchando tu respuesta…</p>';
         try {
-          const r = await window.AI.reviewSpeaking({ level: currentLevel(), prompt: el.dataset.prompt, transcript: st.text, seconds: st.secs });
+          const su = C[unitIndex(el.dataset.unit)] || curUnit();
+          const r = await window.AI.reviewSpeaking({ level: su.level, prompt: su.speaking, transcript: st.text, seconds: st.secs });
           st.feedback = r.text; st.score = r.score; if (r.score != null) record(ctx.unit ? ctx.unit.id : curUnit().id, "speaking", r.score >= 7);
           save(); fb.innerHTML = md(r.text);
         } catch (err) { fb.innerHTML = `<p class="pill bad">${esc(err.message)}</p>`; }
@@ -1240,7 +1284,7 @@ Usa exactamente estas secciones:
         }
         if (need === "listen" && !ctx.shadow.some((x) => x.score != null) && !ctx.dict.some((x) => x.score != null)) return toast("Haz al menos un shadowing o dictado");
         if (need === "speak") {
-          const minW = u.level === "A1" ? 25 : 45;
+          const minW = minWords(u);
           const best = Math.max(0, ...Object.values(ctx.sp || {}).map((x) => words(x.text).length));
           if (!best) return toast("Graba tu respuesta primero 🎙");
           if (best < minW) return toast(`${TEACHER} dice: necesitas al menos ${minW} palabras. Llevas ${best}. ¡Habla un poco más!`);
@@ -1269,7 +1313,12 @@ Usa exactamente estas secciones:
       }
       case "openHw": stopRec(); go("homework", { hwId: el.dataset.id }); break;
       case "studyUnit": go("unit", { unitId: el.dataset.unit }); break;
-      case "newPrompt": { const done = C.slice(0, S.progress.unit + 1); ctx.freePrompt = done[Math.floor(Math.random() * done.length)].speaking; ctx.sp = {}; render(); break; }
+      case "newPrompt": {
+        const done = C.slice(0, Math.max(1, S.progress.unit + 1)); const cur = ctx.freeUnit;
+        const pool = done.length > 1 ? done.filter((u) => u.id !== cur) : done;
+        ctx.freeUnit = pool[Math.floor(Math.random() * pool.length)].id; ctx.sp = {}; ctx.writeMode = {}; render(); break;
+      }
+      case "writeMode": { ctx.writeMode = ctx.writeMode || {}; ctx.writeMode[el.dataset.id] = el.dataset.on === "1"; stopRec(); ctx.recording = null; rerenderKeepScroll(); break; }
       case "resetChat": ctx.chat.history = []; render(); break;
       case "chatMic": {
         const input = $("#chatInput");
@@ -1376,7 +1425,7 @@ Usa exactamente estas secciones:
     }
     if (kind === "typedSpeak") {
       const st = ctx.sp[f.dataset.id]; st.text = (fd.get("t") || "").trim(); st.secs = 0; st.feedback = ""; st.typed = true;
-      if (st.text) { record(ctx.unit ? ctx.unit.id : curUnit().id, "speaking", words(st.text).length >= 40); dayLog().speakingWords += words(st.text).length; save(); }
+      if (st.text) { record(ctx.unit ? ctx.unit.id : curUnit().id, "speaking", words(st.text).length >= 40); dayLog().speakingWords += words(st.text).length; save(); toast("Respuesta guardada: mira tu resultado en el paso 4"); }
       rerenderKeepScroll(); return;
     }
     if (kind === "chat") { const v = fd.get("m"); f.reset(); stopRec(); ctx.recording = null; sendChat(v); return; }

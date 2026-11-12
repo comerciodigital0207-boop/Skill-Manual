@@ -225,3 +225,14 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .tableview { font-size: .9rem; }
 .tableview table { border-collapse: collapse; margin-top: 6px; }
 .tableview td { border-bottom: 1px solid var(--line); padding: 4px 12px 4px 0; font-variant-numeric: tabular-nums; }
+.sstep { display: grid; grid-template-columns: 32px 1fr; gap: 10px; padding: 12px 0; border-bottom: 1px dashed var(--line); }
+.sstep:last-child { border-bottom: 0; }
+.sstep.dim { opacity: .55; }
+.sbody { min-width: 0; }
+.snum { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: #fff; display: grid; place-items: center; font-weight: 800; }
+.speak .prompt { margin: 6px 0; }
+.notice { background: var(--mid-soft); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
+.notice ol { margin: 6px 0; padding-left: 1.2rem; }
+.big-rec { min-width: 150px; }
+.rec-on { background: var(--bad); border-color: var(--bad); }
+.center { text-align: center; }

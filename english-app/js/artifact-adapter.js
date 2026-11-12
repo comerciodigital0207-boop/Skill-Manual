@@ -22,8 +22,9 @@
       this._off.push(dict.onPartial(({ text }) => emit(text, false)));
       this._off.push(dict.onState(({ state }) => { if (state === "idle") this._end(); }));
       dict.start({ language: "en" }).catch((e) => {
-        if (e && e.code === "not_granted" && this.onerror) this.onerror({ error: "not-allowed" });
-        else if (e && e.code !== "stopped") toast("No se pudo usar el micrófono. Puedes escribir tu respuesta.");
+        const code = e && e.code;
+        if (code !== "stopped" && code !== "dismissed" && this.onerror) this.onerror({ error: code === "not_granted" ? "not-allowed" : "audio-capture" });
+        else if (code === "dismissed") toast("Cerraste el permiso del micrófono. Toca Grabar otra vez o escribe tu respuesta.");
         this._end();
       });
     }
@@ -37,7 +38,11 @@
   window.SpeechRecognition = DictationRecognition;
   window.webkitSpeechRecognition = DictationRecognition;
 
-  use("dictation").then((d) => { dict = d; });
+  window.MIC_STATE = "checking";
+  use("dictation").then((d) => {
+    dict = d; window.MIC_STATE = d ? "yes" : "no";
+    if (window.APP_RERENDER) window.APP_RERENDER();
+  });
 
   // ── Profesor IA con la cuenta de Claude del usuario ──
   use("sample").then((sample) => {
