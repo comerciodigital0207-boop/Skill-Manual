@@ -822,11 +822,35 @@
         <form data-form="askAI"><input name="q" placeholder="Ej: ¿cuándo uso 'since' y cuándo 'for'?" required><button class="btn small">Preguntar</button></form><div id="aiAnswer"></div></details>` : ""}
     </section>`;
   }
+  // Ficha de contexto de una palabra: cuándo, hablado vs. escrito, cómo suena, diálogo, cómo armar frases, ojo
+  function vocabContext(unitId, en) {
+    const u = C[unitIndex(unitId)]; if (!u) return null;
+    const i = u.vocab.findIndex((v) => v[0] === en);
+    return i >= 0 && window.CONTEXT && window.CONTEXT[unitId] ? window.CONTEXT[unitId][i] : null;
+  }
+  function contextHTML(c) {
+    return `<div class="ctx">
+      <div class="ctx-row"><span>📍</span><div><b>Cuándo la usas:</b> ${esc(c.when)}</div></div>
+      <div class="ctx-row"><span>🗣</span><div><b>Hablado:</b> ${esc(c.spoken)}</div></div>
+      <div class="ctx-row"><span>✍️</span><div><b>Escrito:</b> ${esc(c.written)}</div></div>
+      <div class="ctx-row"><span>👂</span><div><b>Cómo suena:</b> ${c.sound}</div></div>
+      <div class="ctx-dialog"><b>💬 En una conversación real:</b>
+        ${c.dialog.map(([who, line]) => `<div class="cline"><span class="who">${esc(who)}</span><button class="icon" data-action="say" data-text="${esc(line)}" aria-label="Escuchar">🔊</button><span class="ctext">${esc(line)}</span></div>`).join("")}
+        <button class="link small" data-action="sayDialog" data-lines="${esc(JSON.stringify(c.dialog.map((d) => d[1])))}">▶ Escuchar el diálogo completo</button></div>
+      <div class="ctx-row build"><span>🧩</span><div><b>Arma tu frase:</b> ${c.build}</div></div>
+      <div class="ctx-row watch"><span>⚠️</span><div><b>Ojo:</b> ${esc(c.watch)}</div></div>
+    </div>`;
+  }
   function vocabBlock(u) {
+    const has = !!(window.CONTEXT && window.CONTEXT[u.id]);
     return `<section class="card">
-      <h2>🗂 Vocabulario (${u.vocab.length})</h2>
-      <div class="vocab">${u.vocab.map(([en, es, ex]) => `<div class="v"><div><b>${esc(en)}</b> <span class="muted">— ${esc(es)}</span><div class="ex">${esc(ex)}</div></div>
-        <button class="icon" data-action="say" data-text="${esc(en + ". " + ex)}">🔊</button></div>`).join("")}</div>
+      <h2>🗂 Vocabulario en contexto (${u.vocab.length})</h2>
+      <p class="muted">${has ? "Toca cada palabra para ver <b>cuándo se usa, cómo se dice al hablar y al escribir, un diálogo real y cómo armar tus frases</b>." : window.AI.enabled() ? `Toca “Contexto” en cada palabra y ${TEACHER} te explica cuándo y cómo usarla.` : ""}</p>
+      <div class="vocab">${u.vocab.map(([en, es, ex], i) => { const c = has ? window.CONTEXT[u.id][i] : null; const key = "word:" + u.id + ":" + i; const ai = S.explanations[key];
+        return `<details class="vctx" ${ctx.openWord === key ? "open" : ""}><summary class="v"><div><b>${esc(en)}</b> <span class="muted">— ${esc(es)}</span><div class="ex">${esc(ex)}</div></div>
+          <span class="vbtns"><button class="icon" data-action="say" data-text="${esc(en + ". " + ex)}" aria-label="Escuchar">🔊</button>${c || ai || window.AI.enabled() ? '<span class="ctx-tag">Contexto ▾</span>' : ""}</span></summary>
+          ${c ? contextHTML(c) : ai ? `<div class="ctx">${md(ai)}</div>` : window.AI.enabled() ? `<div class="ctx"><button class="btn small" data-action="wordAI" data-unit="${u.id}" data-i="${i}">🤖 Explícame “${esc(en)}” en contexto</button><div id="wctx-${u.id}-${i}"></div></div>` : ""}
+        </details>`; }).join("")}</div>
     </section>`;
   }
   function resourcesBlock(u) {
@@ -1070,7 +1094,8 @@
         ${groups[id].map((c) => { const [k, label] = cardStatus(c);
           return `<div class="vrow" data-search="${esc((c.en + " " + c.es + " " + (c.ex || "")).toLowerCase())}">
             <button class="icon" data-action="say" data-text="${esc(c.en + (c.ex ? ". " + c.ex : ""))}" aria-label="Escuchar">🔊</button>
-            <div class="vtext"><b>${esc(c.en)}</b> <span class="muted">— ${esc(c.es)}</span>${c.ex ? `<div class="ex">${esc(c.ex)}</div>` : ""}</div>
+            <div class="vtext"><b>${esc(c.en)}</b> <span class="muted">— ${esc(c.es)}</span>${c.ex ? `<div class="ex">${esc(c.ex)}</div>` : ""}
+              ${(() => { const cx = vocabContext(c.unitId, c.en); return cx ? `<details class="mini-ctx"><summary>Ver contexto</summary>${contextHTML(cx)}</details>` : ""; })()}</div>
             <div class="vmeta"><span class="pill ${k}">${c.mistake ? "Error · " : ""}${label}</span><span class="muted">Repaso: ${fmt(c.due)}</span>
             ${c.unitId === "custom" || c.mistake ? `<button class="link small" data-action="delCard" data-id="${esc(c.id)}">Quitar</button>` : ""}</div>
           </div>`; }).join("")}</section>`; }).join("")
@@ -1094,6 +1119,7 @@
       <div class="flash" data-action="flip">
         <div class="front">${esc(card.es)}${card.mistake ? ' <span class="pill bad">tu error</span>' : ""}</div>
         ${showBack ? `<div class="back"><b>${esc(card.en)}</b>${card.ex ? `<div class="ex">${esc(card.ex)}</div>` : ""}</div>` : '<div class="muted">Di la respuesta en voz alta en inglés y toca para ver…</div>'}
+        ${showBack ? (() => { const cx = vocabContext(card.unitId, card.en); return cx ? `<div class="card-when">📍 ${esc(cx.when)}<br>🧩 ${cx.build}<br>⚠️ ${esc(cx.watch)}</div>` : ""; })() : ""}
       </div>
       ${showBack ? `<div class="row center"><button class="icon" data-action="say" data-text="${esc(card.en + (card.ex ? ". " + card.ex : ""))}">🔊</button></div>
       <div class="grade"><button class="btn bad" data-action="grade" data-q="0">Otra vez</button><button class="btn mid" data-action="grade" data-q="1">Difícil</button>
@@ -1374,6 +1400,7 @@ SCORE: ${score}/10`;
     const el = e.target.closest("[data-action]");
     if (!el || el.tagName === "SELECT" || (el.tagName === "INPUT" && el.type === "file")) return;
     const a = el.dataset.action;
+    if (el.closest("summary") && el.tagName === "BUTTON") e.preventDefault();
     if (el.tagName === "A" && a !== "go" && a !== "listened") return;
     if (a === "go") { e.preventDefault(); stopRec(); $("#banner").hidden = true; return go(el.dataset.view); }
 
@@ -1399,6 +1426,23 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
+      case "sayDialog": { const ls = JSON.parse(el.dataset.lines); speakLines(ls.map((t, i) => ({ text: t, voice: i % 2 }))); break; }
+      case "wordAI": {
+        const u = C[unitIndex(el.dataset.unit)]; const i = +el.dataset.i; const [en, es, ex] = u.vocab[i]; const out = $(`#wctx-${u.id}-${i}`);
+        el.disabled = true; out.innerHTML = '<p class="muted">Preparando la explicación…</p>';
+        try {
+          const txt = await window.AI.explain({ level: u.level, question: `Explica la palabra o frase "${en}" (significa: ${es}; ejemplo: "${ex}") a una persona hispanohablante de nivel ${u.level}, en inglés de Estados Unidos y con mucho contexto real.
+Usa exactamente estas secciones, cortas y claras:
+## 📍 Cuándo la usas (situaciones reales concretas)
+## 🗣 Hablado vs ✍️ escrito (cómo la dicen al hablar en EE. UU. y cómo se escribe en un mensaje o un email)
+## 👂 Cómo suena (pronunciación aproximada en español y si se une con otras palabras)
+## 💬 En una conversación real (diálogo de 3 o 4 líneas en EE. UU., con traducción de cada línea)
+## 🧩 Arma tu frase (el patrón y 3 ejemplos que pueda adaptar a su vida)
+## ⚠️ Ojo (confusiones o errores típicos de hispanohablantes)` });
+          S.explanations["word:" + u.id + ":" + i] = txt; ctx.openWord = "word:" + u.id + ":" + i; save(); rerenderKeepScroll();
+        } catch (err) { out.innerHTML = `<p class="pill bad">${esc(err.message)}</p>`; el.disabled = false; }
+        break;
+      }
       case "nextAct": case "celNext": { $("#celebrate").hidden = true; const nx = nextActivity(); stopRec(); go(nx.view, nx.extra); break; }
       case "celHome": $("#celebrate").hidden = true; go("today"); break;
       case "celClose": $("#celebrate").hidden = true; break;

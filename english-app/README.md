@@ -48,3 +48,6 @@ Los datos se guardan en el dispositivo (usa Exportar/Importar para pasarlos a ot
 - **Celebración** al terminar cada actividad: puntos ganados, avance de la meta del día, logros nuevos y lo que ya puedes hacer.
 - **Mi camino**: mapa de unidades por nivel con lo que ya sabes hacer y lo próximo por desbloquear.
 - **Logros** (rachas, palabras, escenas, unidades, niveles).
+
+## Cada palabra con su contexto
+Las 64 palabras y frases de A1 tienen una ficha de contexto: cuándo se usa, cómo se dice al hablar y cómo se escribe, cómo suena, un mini diálogo real de EE. UU. con audio, cómo armar tus propias frases y la confusión típica. Aparece en la clase, al voltear cada tarjeta de repaso y en “Mi vocabulario”. Desde A2, el profesor IA genera la ficha con la misma estructura.

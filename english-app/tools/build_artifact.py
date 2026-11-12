@@ -6,7 +6,7 @@ root = pathlib.Path(__file__).resolve().parent.parent
 css = (root / "styles.css").read_text()
 html = (root / "index.html").read_text()
 body = re.search(r"<body>(.*?)<script", html, re.S).group(1).strip()
-scripts = ["js/curriculum.js", "js/explanations.js", "js/native.js", "js/artifact-adapter.js", "js/ai.js", "js/app.js"]
+scripts = ["js/curriculum.js", "js/explanations.js", "js/native.js", "js/context.js", "js/artifact-adapter.js", "js/ai.js", "js/app.js"]
 js = "\n".join(f"<script>\n{(root / s).read_text()}\n</script>" for s in scripts)
 
 extra_css = """
