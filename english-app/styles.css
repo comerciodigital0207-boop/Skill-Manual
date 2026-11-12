@@ -335,3 +335,18 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .cline .who { font-weight: 700; color: var(--muted); font-size: .8rem; min-width: 58px; }
 .card-when { font-size: .9rem; text-align: left; background: var(--card); border-radius: 10px; padding: 8px 10px; }
 .mini-ctx summary { color: var(--primary); font-size: .85rem; cursor: pointer; padding: 4px 0; font-weight: 600; }
+/* Conversación guiada con Kate */
+.scen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.scen { display: flex; align-items: center; gap: 6px; text-align: left; border: 1px solid var(--line); background: var(--bg); color: var(--text); border-radius: 10px; padding: 8px; font: inherit; font-size: .9rem; cursor: pointer; }
+.scen span { font-size: 1.3rem; }
+.scen.on { border-color: var(--primary); background: var(--primary-soft); font-weight: 700; }
+.chips-col { display: grid; gap: 6px; margin: 6px 0; }
+.starter { display: grid; grid-template-columns: 34px 1fr; align-items: center; background: var(--bg); border-radius: 10px; padding: 6px 8px; }
+.sugg { display: flex; flex-direction: column; text-align: left; gap: 2px; border: 1px solid var(--primary); background: var(--card); color: var(--text); border-radius: 12px; padding: 8px 12px; font: inherit; cursor: pointer; }
+.sugg span { color: var(--muted); font-size: .85rem; }
+.sugg:hover { background: var(--primary-soft); }
+.sugg-box { background: var(--primary-soft); border-radius: 12px; padding: 10px; margin: 8px 0; }
+.kate-tip { margin-top: 6px; background: var(--mid-soft); border-radius: 8px; padding: 6px 8px; font-size: .92rem; }
+.msg .tr summary { cursor: pointer; color: var(--primary); font-size: .85rem; margin-top: 4px; }
+.lifelines summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.chat-form input { min-width: 0; }

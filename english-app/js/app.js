@@ -1204,18 +1204,32 @@ SCORE: ${score}/10`;
   }
 
   // ───────────────────────── SPEAKING ─────────────────────────
+  // Situaciones de conversación: qué es, tu objetivo y frases para arrancar
   const SCENARIOS = [
-    "Ordering at a coffee shop in Los Angeles. You are the customer; I am the barista.",
-    "Small talk with your neighbor in the elevator of your apartment building in Miami.",
-    "Checking out at a grocery store in Texas.",
-    "Ordering dinner at a diner in New York; I'm your server.",
-    "First day at a new job in an American office; I'm a friendly coworker.",
-    "Calling a doctor's office to make an appointment.",
-    "Chatting with a new friend at a house party about work, hobbies and weekend plans.",
-    "A job interview for a position you would love at an American company.",
-    "Returning something you bought at a store and asking for a refund.",
-    "Talking with a friend about a show you binge-watched."
+    { en: "Ordering at a coffee shop in Los Angeles. The student is the customer; you are the barista.", es: "Pedir en una cafetería", icon: "☕", goal: "Pedir una bebida, decir el tamaño y pagar.", starters: [["Hi! Can I get a coffee, please?", "¡Hola! ¿Me das un café, por favor?"], ["A medium, please.", "Uno mediano, por favor."], ["How much is it?", "¿Cuánto es?"], ["That's it, thanks.", "Eso es todo, gracias."]] },
+    { en: "Small talk with the student's neighbor in the elevator of their apartment building in Miami.", es: "Saludar a tu vecino", icon: "👋", goal: "Saludar, hablar del clima y despedirte.", starters: [["Hi! How's it going?", "¡Hola! ¿Cómo va todo?"], ["Pretty good, thanks. And you?", "Bastante bien, gracias. ¿Y tú?"], ["It's so hot today!", "¡Qué calor hace hoy!"], ["Have a good one!", "¡Que te vaya bien!"]] },
+    { en: "Checking out at a grocery store in Texas. You are the cashier.", es: "Pagar en el supermercado", icon: "🛒", goal: "Responder las preguntas del cajero y pagar.", starters: [["Yes, I found everything, thanks.", "Sí, encontré todo, gracias."], ["No, I don't have a rewards card.", "No, no tengo tarjeta de puntos."], ["Yes, I need a bag, please.", "Sí, necesito una bolsa, por favor."], ["Debit, please.", "Débito, por favor."]] },
+    { en: "Ordering dinner at a diner in New York; you are the server.", es: "Pedir comida en un restaurante", icon: "🍔", goal: "Pedir mesa, bebida, comida y la cuenta.", starters: [["Hi, a table for two, please.", "Hola, una mesa para dos, por favor."], ["Can I get a lemonade?", "¿Me trae una limonada?"], ["I'll have the burger, please.", "Quiero la hamburguesa, por favor."], ["Can we get the check, please?", "¿Nos trae la cuenta, por favor?"]] },
+    { en: "First day at a new job in an American office; you are a friendly coworker.", es: "Primer día de trabajo", icon: "💼", goal: "Presentarte, decir de dónde eres y aceptar una invitación.", starters: [["Hi, I'm new here. My name is…", "Hola, soy nueva aquí. Me llamo…"], ["I'm from Colombia.", "Soy de Colombia."], ["Nice to meet you!", "¡Mucho gusto!"], ["Sure, sounds good!", "¡Claro, suena bien!"]] },
+    { en: "The student calls a doctor's office to make an appointment; you are the receptionist.", es: "Pedir una cita médica por teléfono", icon: "📞", goal: "Pedir una cita y elegir día y hora.", starters: [["Hi, I'd like to make an appointment.", "Hola, quisiera pedir una cita."], ["Yes, I'm a new patient.", "Sí, soy paciente nueva."], ["Afternoons are better for me.", "Las tardes me quedan mejor."], ["That works, thank you.", "Me sirve, gracias."]] },
+    { en: "Chatting with a new friend at a house party about work, hobbies and weekend plans.", es: "Conocer a alguien en una fiesta", icon: "🎉", goal: "Presentarte, hablar de tu trabajo y de lo que te gusta.", starters: [["Hi, I'm…. How do you know Sarah?", "Hola, soy…. ¿De dónde conoces a Sarah?"], ["I work in…", "Trabajo en…"], ["I like music and movies.", "Me gusta la música y el cine."], ["It was great talking to you!", "¡Fue un gusto hablar contigo!"]] },
+    { en: "A simple job interview for a position the student would love at an American company; you are the interviewer.", es: "Entrevista de trabajo", icon: "🧑‍💼", goal: "Hablar de ti, tu experiencia y por qué quieres el trabajo.", starters: [["Thank you for having me.", "Gracias por recibirme."], ["I have three years of experience in…", "Tengo tres años de experiencia en…"], ["I'm a hard worker and I learn fast.", "Soy trabajadora y aprendo rápido."], ["I really want to grow with your company.", "De verdad quiero crecer con su empresa."]] },
+    { en: "Returning something the student bought at a store and asking for a refund; you are the store clerk.", es: "Devolver algo en una tienda", icon: "🧾", goal: "Explicar el problema y pedir que te devuelvan el dinero.", starters: [["Hi, I'd like to return this.", "Hola, quisiera devolver esto."], ["It doesn't fit.", "No me queda bien."], ["Here's my receipt.", "Aquí está mi recibo."], ["Can I get a refund?", "¿Me pueden devolver el dinero?"]] },
+    { en: "Talking with a friend about a TV show you both watched.", es: "Hablar de una serie con una amiga", icon: "📺", goal: "Decir qué viste, si te gustó y por qué.", starters: [["I watched a really good show.", "Vi una serie muy buena."], ["It's about…", "Se trata de…"], ["I loved it!", "¡Me encantó!"], ["You have to watch it!", "¡Tienes que verla!"]] }
   ];
+  const LIFELINES = [["Sorry, I don't understand.", "Perdón, no entiendo."], ["Can you say that again, please?", "¿Puedes repetirlo, por favor?"], ["Can you speak more slowly?", "¿Puedes hablar más despacio?"], ["How do you say … in English?", "¿Cómo se dice … en inglés?"], ["What does … mean?", "¿Qué significa …?"], ["Give me a second.", "Dame un segundo."]];
+  // Separa el mensaje de Kate en: inglés, traducción, corrección y respuestas sugeridas
+  function parseKate(text) {
+    const out = { en: [], es: "", tip: "", options: [] };
+    text.split("\n").map((l) => l.trim()).filter(Boolean).forEach((l) => {
+      if (l.startsWith("🇪🇸")) out.es = l.replace(/^🇪🇸\s*/, "");
+      else if (l.startsWith("💡")) out.tip = l.replace(/^💡\s*/, "");
+      else if (l.startsWith("➡️") || l.startsWith("➡")) { const [en, es] = l.replace(/^➡️?\s*/, "").split("|").map((x) => x.trim()); if (en) out.options.push([en, es || ""]); }
+      else out.en.push(l.replace(/^\d\)\s*/, ""));
+    });
+    out.en = out.en.join(" ");
+    return out;
+  }
   const firstName = () => ((S.profile && S.profile.name) || "Ana").split(" ")[0];
   const sceneText = (t) => t.replace(/\bAna\b/g, firstName());
   const SCENES = () => (window.NATIVE || {}).scenes || [];
@@ -1289,7 +1303,7 @@ SCORE: ${score}/10`;
     const done = C.slice(0, Math.max(1, S.progress.unit + 1));
     if (!ctx.freeUnit) ctx.freeUnit = done[Math.floor(Math.random() * done.length)].id;
     const fu = C[unitIndex(ctx.freeUnit)];
-    const chat = (ctx.chat = ctx.chat || { scenario: SCENARIOS[0], history: [] });
+    const chat = (ctx.chat = ctx.chat || { si: 0, history: [] });
     const stab = ctx.stab || "real";
     if (stab === "real" && ctx.sceneId) { const sc = SCENES().find((x) => x.id === ctx.sceneId); if (sc) return sceneView(sc); }
     const tabs = `<div class="tabs three">${[["real", "🇺🇸 Vida real"], ["reto", "🎯 Reto"], ["chat", "💬 Conversar"]].map(([k, n]) => `<button class="${stab === k ? "on" : ""}" data-action="stab" data-t="${k}">${n}</button>`).join("")}</div>`;
@@ -1301,17 +1315,49 @@ SCORE: ${score}/10`;
         ${speakingPanel(fu, "free")}
         <button class="btn small" data-action="newPrompt">🔄 Darme otro tema</button></section>`;
     return head + `
-      <section class="card"><h2>💬 Conversa con ${TEACHER} (situaciones reales en EE. UU.)</h2>
-        ${window.AI.enabled() ? `
-        <label>Situación<select data-action="scenario">${SCENARIOS.map((s) => `<option ${s === chat.scenario ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
-        <div class="chat" id="chat">${chat.history.length ? chat.history.map((m) => `<div class="msg ${m.role}">${m.role === "assistant" ? `<button class="icon" data-action="say" data-text="${esc(m.content.split("💡")[0])}">🔊</button>` : ""}${md(m.content)}</div>`).join("") : '<p class="muted">Pulsa 🎙 y saluda para empezar (o escribe).</p>'}</div>
-        <form data-form="chat" class="row"><input name="m" id="chatInput" placeholder="Speak or type in English…" autocomplete="off">
-          ${micMode() === "yes" ? `<button type="button" class="btn small" data-action="chatMic">${ctx.recording === "chat" ? "⏹" : "🎙"}</button>` : ""}<button class="btn small primary">Enviar</button></form>
-        ${micMode() === "no" ? `<p class="muted">El micrófono no funciona en este dispositivo: escribe tus respuestas (o dicta con el 🎤 del teclado del celular) y léelas en voz alta.</p>` : ""}
-        <button class="link" data-action="resetChat">Reiniciar conversación</button>`
-        : `<p>${window.ARTIFACT_MODE ? "El profesor IA no está disponible en esta vista. Abre la app con tu cuenta de Claude iniciada." : `Para conversar con un profesor que te responde con voz y te corrige en tiempo real, añade tu API key de Claude en <a href="#" data-action="go" data-view="settings">Ajustes</a>.`}</p>
-           <p class="muted">Mientras tanto puedes: hacer shadowing en cada clase, el reto de speaking de arriba y practicar con los podcasts recomendados (repite en voz alta lo que oyes).</p>`}
+      ${chatSection(chat)}`;
+  }
+  function chatSection(chat) {
+    if (!window.AI.enabled()) {
+      return `<section class="card"><h2>💬 Conversa con ${TEACHER}</h2>
+        <p>${window.ARTIFACT_MODE ? "El profesor IA no está disponible en esta vista. Abre la app con tu cuenta de Claude iniciada." : `Para conversar con ${TEACHER}, añade tu API key de Claude en <a href="#" data-action="go" data-view="settings">Ajustes</a>.`}</p>
+        <p class="muted">Mientras tanto, practica con las escenas de <b>🇺🇸 Vida real</b>: tienen la conversación completa y te dicen qué decir en cada turno.</p></section>`;
+    }
+    const sc = SCENARIOS[chat.si || 0];
+    const msgs = chat.history.filter((m) => !m.hidden);
+    const last = [...chat.history].reverse().find((m) => m.role === "assistant");
+    const lastK = last ? parseKate(last.content) : null;
+    const lifelines = `<details class="lifelines"><summary>🛟 Frases salvavidas (si te quedas sin palabras)</summary>
+      <div class="chips-col">${LIFELINES.map(([en, es]) => `<button class="sugg" data-action="useSugg" data-text="${esc(en)}"><b>${esc(en)}</b><span>${esc(es)}</span></button>`).join("")}</div></details>`;
+    if (!chat.history.length) {
+      return `<section class="card"><h2>💬 Conversa con ${TEACHER}</h2>
+        <p class="muted">Elige una situación. ${TEACHER} habla primero y en cada turno te sugiere qué responder. Tú solo eliges, lo dices en voz alta y lo envías.</p>
+        <div class="scen-grid">${SCENARIOS.map((x, i) => `<button class="scen ${i === (chat.si || 0) ? "on" : ""}" data-action="pickScen" data-i="${i}"><span>${x.icon}</span>${esc(x.es)}</button>`).join("")}</div>
+      </section>
+      <section class="card prep"><h2>${sc.icon} ${esc(sc.es)}</h2>
+        <p>🎯 <b>Tu objetivo:</b> ${esc(sc.goal)}</p>
+        <p><b>Frases que te van a servir</b> (escúchalas y repítelas antes de empezar):</p>
+        <div class="chips-col">${sc.starters.map(([en, es]) => `<div class="starter"><button class="icon" data-action="say" data-text="${esc(en)}" aria-label="Escuchar">🔊</button><div><b>${esc(en)}</b><div class="muted">${esc(es)}</div></div></div>`).join("")}</div>
+        ${lifelines}
+        <button class="btn primary big" data-action="startChat">▶ Empezar: ${TEACHER} habla primero</button>
       </section>`;
+    }
+    return `<section class="card"><div class="row between"><h2>${sc.icon} ${esc(sc.es)}</h2><button class="link small" data-action="resetChat">Cambiar situación</button></div>
+      <p class="muted">🎯 ${esc(sc.goal)}</p>
+      <div class="chat" id="chat">${msgs.map((m) => {
+        if (m.role === "user") return `<div class="msg user">${esc(m.content)}</div>`;
+        const k = parseKate(m.content);
+        return `<div class="msg assistant"><div><button class="icon" data-action="say" data-text="${esc(k.en)}" aria-label="Escuchar">🔊</button> ${esc(k.en)}</div>
+          ${k.es ? `<details class="tr"><summary>🇪🇸 Ver en español</summary>${esc(k.es)}</details>` : ""}
+          ${k.tip ? `<div class="kate-tip">💡 ${esc(k.tip)}</div>` : ""}</div>`;
+      }).join("")}${ctx.chatBusy ? `<div class="msg assistant muted">${TEACHER} está escribiendo…</div>` : ""}</div>
+      ${lastK && lastK.options.length && !ctx.chatBusy ? `<div class="sugg-box"><b>¿Qué puedes responder?</b> <span class="muted">Toca una, escúchala, <b>dila en voz alta</b> y envíala (o cámbiala a tu gusto).</span>
+        <div class="chips-col">${lastK.options.map(([en, es]) => `<button class="sugg" data-action="useSugg" data-text="${esc(en)}"><b>${esc(en)}</b><span>${esc(es)}</span></button>`).join("")}</div></div>` : ""}
+      <form data-form="chat" class="row chat-form"><input name="m" id="chatInput" placeholder="Escribe en inglés (o en español si no sabes cómo decirlo)" autocomplete="off">
+        ${micMode() === "yes" ? `<button type="button" class="btn small" data-action="chatMic">${ctx.recording === "chat" ? "⏹" : "🎙"}</button>` : ""}<button class="btn small primary">Enviar</button></form>
+      <p class="muted">💬 ¿No sabes cómo decir algo? <b>Escríbelo en español</b> y ${TEACHER} te enseña cómo se dice en inglés.${micMode() === "no" ? " (El micrófono no funciona aquí: dicta con el 🎤 del teclado del celular.)" : ""}</p>
+      ${lifelines}
+    </section>`;
   }
 
   // ───────────────────────── PROGRESO ─────────────────────────
@@ -1658,7 +1704,10 @@ Usa exactamente estas secciones:
         ctx.freeUnit = pool[Math.floor(Math.random() * pool.length)].id; ctx.sp = {}; ctx.writeMode = {}; render(); break;
       }
       case "writeMode": { ctx.writeMode = ctx.writeMode || {}; ctx.writeMode[el.dataset.id] = el.dataset.on === "1"; stopRec(); ctx.recording = null; rerenderKeepScroll(); break; }
-      case "resetChat": ctx.chat.history = []; render(); break;
+      case "resetChat": ctx.chat.history = []; ctx.chatBusy = false; render(); break;
+      case "pickScen": ctx.chat.si = +el.dataset.i; ctx.chat.history = []; rerenderKeepScroll(); break;
+      case "startChat": sendChat(`(The student is ready. Start the conversation in character with a short, friendly greeting and ONE easy question. Name: ${firstName()}.)`, true); break;
+      case "useSugg": { const inp = $("#chatInput"); speak(el.dataset.text); if (inp) { inp.value = el.dataset.text; inp.focus(); } else toast("Primero toca “Empezar”"); break; }
       case "chatMic": {
         const input = $("#chatInput");
         if (ctx.recording === "chat") { stopRec(); ctx.recording = null; el.textContent = "🎙"; break; }
@@ -1696,24 +1745,24 @@ Usa exactamente estas secciones:
   }
   function rerenderKeepScroll() { const y = window.scrollY; render(); window.scrollTo(0, y); }
 
-  async function sendChat(text) {
-    const chat = ctx.chat; if (!text.trim()) return;
-    chat.history.push({ role: "user", content: text.trim() });
-    render(); const box = $("#chat"); box.insertAdjacentHTML("beforeend", '<div class="msg assistant muted">…</div>'); box.scrollTop = box.scrollHeight;
+  async function sendChat(text, hidden) {
+    const chat = ctx.chat; if (!text.trim() || ctx.chatBusy) return;
+    chat.history.push({ role: "user", content: text.trim(), hidden: !!hidden });
+    ctx.chatBusy = true; render(); scrollChat();
     try {
-      const reply = await window.AI.chat({ level: currentLevel(), scenario: chat.scenario, history: chat.history });
+      const reply = await window.AI.chat({ level: currentLevel(), scenario: SCENARIOS[chat.si || 0].en, history: chat.history });
       chat.history.push({ role: "assistant", content: reply });
-      dayLog().speakingWords += words(text).length; touchStreak(); save();
-      render(); speak(reply.split("💡")[0]);
-      const b = $("#chat"); if (b) b.scrollTop = b.scrollHeight;
-    } catch (err) { chat.history.pop(); render(); toast(err.message); }
+      if (!hidden) dayLog().speakingWords += words(text).length;
+      touchStreak(); save();
+      ctx.chatBusy = false; render(); speak(parseKate(reply).en); scrollChat();
+    } catch (err) { chat.history.pop(); ctx.chatBusy = false; render(); toast(err.message); }
   }
+  function scrollChat() { const b = $("#chat"); if (b) b.scrollTop = b.scrollHeight; const f = $(".chat-form"); if (f) f.scrollIntoView({ block: "nearest" }); }
 
   document.addEventListener("click", (e) => { if (e.target.id === "celebrate") e.target.hidden = true; });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#celebrate").hidden) $("#celebrate").hidden = true; });
   document.addEventListener("change", (e) => {
     const el = e.target;
-    if (el.dataset.action === "scenario") { ctx.chat = { scenario: el.value, history: [] }; render(); }
     if (el.dataset.action === "import" && el.files[0]) {
       const r = new FileReader();
       r.onload = () => { try { const d = JSON.parse(r.result); const key = S.settings.apiKey; S = { ...defaults(), ...d }; S.settings.apiKey = key; save(); toast("Datos importados"); go("today"); } catch (err) { toast("Archivo no válido"); } };
