@@ -442,7 +442,7 @@
   // ───────────────────────── Router ─────────────────────────
   let view = "today";
   let ctx = {}; // estado temporal de la vista
-  function go(v, extra) { view = v; ctx = extra || {}; render(); window.scrollTo(0, 0); }
+  function go(v, extra) { const vs = document.getElementById("vsheet"); if (vs) vs.hidden = true; view = v; ctx = extra || {}; render(); window.scrollTo(0, 0); }
 
   function render() {
     const main = $("#main");
@@ -627,6 +627,7 @@
         <div class="home-stats"><div class="hs"><span class="hs-n">🔥 ${S.streak.count}</span><span class="muted">días seguidos</span></div>
           <div class="hs"><span class="hs-n">${u.level} · ${lp.pct}%</span><span class="muted">del nivel ${u.level}</span></div>
           <div class="hs"><span class="hs-n">${goalDone ? "✅" : "🎯"}</span><span class="muted">${goalDone ? "meta de hoy cumplida" : "meta de hoy: " + DAILY_XP + " ⚡"}</span></div></div></div>
+      ${pendingHw.length ? `<button class="btn small hw-chip" data-action="go" data-view="homework">📝 Tienes ${pendingHw.length} tarea${pendingHw.length > 1 ? "s" : ""} pendiente${pendingHw.length > 1 ? "s" : ""}${pendingHw.some((h) => h.due < t) ? " (atrasada)" : ""}</button>` : ""}
       <button class="btn primary big continue" data-action="nextAct"><span>${nx.icon}</span> ${esc(nx.label)}</button>
       <p class="muted center">${esc(nx.why)}</p>
     </section>
@@ -797,7 +798,7 @@
         <h3>2. El orden de la frase</h3>
         ${ex.formulas.map((f) => `<div class="formula"><div class="flabel">${esc(f.label)}</div>
           <div class="parts">${f.parts.map((p, i) => `${i ? '<span class="plus">+</span>' : ""}<span class="part">${esc(p)}</span>`).join("")}</div>
-          <div class="fex"><button class="icon" data-action="say" data-text="${esc(f.ex)}">🔊</button> <b>${esc(f.ex)}</b> <span class="muted">→ ${esc(f.es)}</span></div></div>`).join("")}
+          <div class="fex"><button class="icon" data-action="say" data-text="${esc(f.ex)}">🔊</button> <b>${annotate(f.ex)}</b> <span class="muted">→ ${esc(f.es)}</span></div></div>`).join("")}
         ${ex.table ? `<div class="tablewrap"><table>${ex.table.map(([a, b]) => `<tr><td><b>${esc(a)}</b></td><td>${esc(b)}</td></tr>`).join("")}</table></div>` : ""}
         <h3>3. ¿Por qué es así?</h3><p>${ex.why}</p>
         <h3>4. Diferencias con el español</h3><p>${ex.spanish}</p>
@@ -816,7 +817,8 @@
     return `<section class="card">
       <h2>📐 ${esc(u.grammar.name)}</h2>
       ${explainedLesson(u)}
-      <ul class="examples">${u.grammar.examples.map((e) => `<li><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> ${esc(e)}</li>`).join("")}</ul>
+      <p class="muted small-note">Toca los <span class="vw demo">verbos subrayados</span> para ver qué forma es y por qué.</p>
+      <ul class="examples">${u.grammar.examples.map((e) => `<li><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> ${annotate(e)}</li>`).join("")}</ul>
       ${u.sound ? `<div class="sound"><b>🗣 Suena como nativo:</b> ${u.sound}</div>` : ""}
       <p class="muted">Escucha cada ejemplo y repítelo en voz alta 3 veces, imitando el ritmo. Así se aprende a hablar, no solo a leer.</p>
       <button class="btn small" data-action="go" data-view="guide">📐 Ver en la Guía cómo armar oraciones y los tiempos verbales</button>
@@ -837,7 +839,7 @@
       <div class="ctx-row"><span>✍️</span><div><b>Escrito:</b> ${esc(c.written)}</div></div>
       <div class="ctx-row"><span>👂</span><div><b>Cómo suena:</b> ${c.sound}</div></div>
       <div class="ctx-dialog"><b>💬 En una conversación real:</b>
-        ${c.dialog.map(([who, line]) => `<div class="cline"><span class="who">${esc(who)}</span><button class="icon" data-action="say" data-text="${esc(line)}" aria-label="Escuchar">🔊</button><span class="ctext">${esc(line)}</span></div>`).join("")}
+        ${c.dialog.map(([who, line]) => `<div class="cline"><span class="who">${esc(who)}</span><button class="icon" data-action="say" data-text="${esc(line)}" aria-label="Escuchar">🔊</button><span class="ctext">${annotate(line)}</span></div>`).join("")}
         <button class="link small" data-action="sayDialog" data-lines="${esc(JSON.stringify(c.dialog.map((d) => d[1])))}">▶ Escuchar el diálogo completo</button></div>
       <div class="ctx-row build"><span>🧩</span><div><b>Arma tu frase:</b> ${c.build}</div></div>
       <div class="ctx-row watch"><span>⚠️</span><div><b>Ojo:</b> ${esc(c.watch)}</div></div>
@@ -1073,11 +1075,11 @@
     const f = ctx.vfilter || "all";
     const all = Object.values(S.cards);
     const filters = [["all", "Todas"], ["learning", "Por dominar"], ["mastered", "Dominadas"], ["mistakes", "Mis errores"], ["mine", "Conversaciones y mías"]];
-    const pass = (c) => f === "all" ? true : f === "mastered" ? c.box >= 4 : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? ["custom", "conv", "real"].includes(c.unitId) : true;
+    const pass = (c) => f === "all" ? true : f === "mastered" ? c.box >= 4 : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? ["custom", "conv", "real", "verb", "topic"].includes(c.unitId) : true;
     const list = all.filter(pass);
     const groups = {};
     list.forEach((c) => { (groups[c.unitId] = groups[c.unitId] || []).push(c); });
-    const rank = (g) => ({ conv: -3, real: -2, custom: -1 }[g] || 0);
+    const rank = (g) => ({ conv: -5, real: -4, verb: -3, topic: -2, custom: -1 }[g] || 0);
     const order = Object.keys(groups).sort((a, b) => rank(a) - rank(b) || unitIndex(b) - unitIndex(a));
     const fmt = (d) => d <= today() ? "hoy" : d === addDays(today(), 1) ? "mañana" : new Date(d + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" });
     return `<section class="card">
@@ -1093,7 +1095,7 @@
         <label>Ejemplo (opcional)<input name="ex" placeholder="Ej: The trip? I'm looking forward to it!"></label>
         <button class="btn primary">Guardar tarjeta</button></form></details>
     ${list.length ? order.map((id) => { const u = C[unitIndex(id)];
-      const special = { custom: "✍️ Mis palabras", conv: "💬 De mis conversaciones con " + TEACHER, real: "🇺🇸 De la vida real (escenas)" };
+      const special = { custom: "✍️ Mis palabras", conv: "💬 De mis conversaciones con " + TEACHER, real: "🇺🇸 De la vida real (escenas)", verb: "📖 Verbos", topic: "🗂 Vocabulario por temas" };
       return `<section class="card vgroup"><h3>${special[id] || (u ? `${u.level} · ${esc(u.title)}` : esc(id))} <span class="muted">(${groups[id].length})</span></h3>
         ${groups[id].map((c) => { const [k, label] = cardStatus(c);
           return `<div class="vrow" data-search="${esc((c.en + " " + c.es + " " + (c.ex || "")).toLowerCase())}">
@@ -1101,7 +1103,7 @@
             <div class="vtext"><b>${esc(c.en)}</b> <span class="muted">— ${esc(c.es)}</span>${c.ex ? `<div class="ex">${esc(c.ex)}</div>` : ""}
               ${(() => { const cx = vocabContext(c.unitId, c.en); return cx ? `<details class="mini-ctx"><summary>Ver contexto</summary>${contextHTML(cx)}</details>` : ""; })()}</div>
             <div class="vmeta"><span class="pill ${k}">${c.mistake ? "Error · " : ""}${label}</span><span class="muted">Repaso: ${fmt(c.due)}</span>
-            ${["custom", "conv", "real"].includes(c.unitId) || c.mistake ? `<button class="link small" data-action="delCard" data-id="${esc(c.id)}">Quitar</button>` : ""}</div>
+            ${["custom", "conv", "real", "verb", "topic"].includes(c.unitId) || c.mistake ? `<button class="link small" data-action="delCard" data-id="${esc(c.id)}">Quitar</button>` : ""}</div>
           </div>`; }).join("")}</section>`; }).join("")
       : `<section class="card"><p>${all.length ? "No hay tarjetas con este filtro." : "Todavía no tienes tarjetas. Se crean solas al terminar la clase “Aprende” de cada unidad, y también puedes agregar las tuyas."}</p></section>`}`;
   }
@@ -1274,7 +1276,7 @@ SCORE: ${score}/10`;
         <div class="row"><button class="btn small" data-action="sceneToggle" data-k="show">${st.show ? "🙈 Ocultar texto" : "👀 Mostrar texto"}</button>
         ${st.show ? `<button class="btn small" data-action="sceneToggle" data-k="es">${st.es ? "Ocultar traducción" : "🇪🇸 Ver traducción"}</button>` : ""}</div>
         ${st.show ? `<div class="dialog">${lines.map((l, i) => `<div class="dline ${l.who === "Tú" ? "me" : ""}"><span class="who">${esc(l.who === "Tú" ? "Tú" : l.who)}</span>
-          <div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}" aria-label="Escuchar">🔊</button> ${esc(l.en)}${st.es ? `<div class="muted">${esc(l.es)}</div>` : ""}${l.spoken && st.es ? `<div class="muted">Dicho completo: ${esc(l.spoken)}</div>` : ""}</div></div>`).join("")}</div>
+          <div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}" aria-label="Escuchar">🔊</button> ${annotate(l.en)}${st.es ? `<div class="muted">${esc(l.es)}</div>` : ""}${l.spoken && st.es ? `<div class="muted">Dicho completo: ${esc(l.spoken)}</div>` : ""}</div></div>`).join("")}</div>
         <h3>Expresiones nativas de esta escena</h3>
         <div class="exprs">${sc.expressions.map(([e, m]) => `<div><button class="icon" data-action="say" data-text="${esc(e)}">🔊</button> <b>${esc(e)}</b> <span class="muted">— ${esc(m)}</span></div>`).join("")}</div>
         <button class="btn small" data-action="addSceneCards" data-id="${sc.id}">➕ Agregar estas expresiones a mis tarjetas</button>
@@ -1298,10 +1300,10 @@ SCORE: ${score}/10`;
         const l = lines[st.i];
         const prev = lines.slice(Math.max(0, st.i - 2), st.i);
         body = `<p class="muted">Tú haces el papel de <b>“Tú”</b>. Cuando sea tu turno, verás en español lo que debes decir: <b>dilo en inglés en voz alta</b> y luego compara con la versión nativa.</p>
-          <div class="dialog">${prev.map((p) => `<div class="dline ${p.who === "Tú" ? "me" : ""} past"><span class="who">${esc(p.who)}</span><div>${esc(p.en)}</div></div>`).join("")}
-          ${l.who !== "Tú" ? `<div class="dline"><span class="who">${esc(l.who)}</span><div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}">🔊</button> <b>${esc(l.en)}</b><div class="muted">${esc(l.es)}</div></div></div>`
+          <div class="dialog">${prev.map((p) => `<div class="dline ${p.who === "Tú" ? "me" : ""} past"><span class="who">${esc(p.who)}</span><div>${annotate(p.en)}</div></div>`).join("")}
+          ${l.who !== "Tú" ? `<div class="dline"><span class="who">${esc(l.who)}</span><div><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}">🔊</button> <b>${annotate(l.en)}</b><div class="muted">${esc(l.es)}</div></div></div>`
             : `<div class="dline me turn"><span class="who">Tú</span><div><div class="muted">Tu turno. Di en inglés:</div><b>🇪🇸 ${esc(l.es)}</b>
-              ${st.phase === "reveal" ? `<div class="native-say"><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}">🔊</button> 🇺🇸 <b>${esc(l.en)}</b></div>` : ""}</div></div>`}</div>
+              ${st.phase === "reveal" ? `<div class="native-say"><button class="icon" data-action="say" data-text="${esc(l.spoken || l.en)}">🔊</button> 🇺🇸 <b>${annotate(l.en)}</b></div>` : ""}</div></div>`}</div>
           ${l.who !== "Tú" ? `<button class="btn primary big" data-action="sceneNext">Siguiente →</button>`
             : st.phase === "reveal" ? `<div class="grade two"><button class="btn bad" data-action="sceneGrade" data-ok="0">🔁 La repito</button><button class="btn good" data-action="sceneGrade" data-ok="1">✅ La dije bien</button></div>`
             : `<button class="btn primary big" data-action="sceneReveal">Ya la dije → escuchar cómo lo dice un nativo</button>`}
@@ -1362,13 +1364,13 @@ SCORE: ${score}/10`;
     }
     const stg = Math.min(sc.stages.length, chat.stage || 1);
     return `<section class="card"><div class="row between"><h2>${sc.icon} ${esc(sc.es)}</h2><button class="link small" data-action="resetChat">Cambiar situación</button></div>
-      <p class="muted">🎯 ${esc(sc.goal)}</p>
+      <p class="muted">🎯 ${esc(sc.goal)} · Toca los <span class="vw demo">verbos subrayados</span> para entender por qué van así.</p>
       <div class="stages">${sc.stages.map(([es], i) => `<span class="stg ${chat.ended || i + 1 < stg ? "d" : i + 1 === stg ? "n" : ""}" title="${esc(es)}">${chat.ended || i + 1 < stg ? "✓" : i + 1}</span>`).join("")}</div>
       <p class="stage-now">${chat.ended ? "✅ Todas las etapas" : `Etapa ${stg} de ${sc.stages.length}: <b>${esc(sc.stages[stg - 1][0])}</b>`}</p>
       <div class="chat" id="chat">${msgs.map((m) => {
         if (m.role === "user") return `<div class="msg user">${esc(m.content.split("\n(Note for Kate")[0])}</div>`;
         const k = parseKate(m.content);
-        return `<div class="msg assistant"><div><button class="icon" data-action="say" data-text="${esc(k.en)}" aria-label="Escuchar">🔊</button> ${esc(k.en)}</div>
+        return `<div class="msg assistant"><div><button class="icon" data-action="say" data-text="${esc(k.en)}" aria-label="Escuchar">🔊</button> ${annotate(k.en)}</div>
           ${k.es ? `<details class="tr"><summary>🇪🇸 Ver en español</summary>${esc(k.es)}</details>` : ""}
           ${k.tip ? `<div class="kate-tip">💡 ${esc(k.tip)}</div>` : ""}</div>`;
       }).join("")}${ctx.chatBusy ? `<div class="msg assistant muted">${TEACHER} está escribiendo…</div>` : ""}</div>
@@ -1391,7 +1393,7 @@ SCORE: ${score}/10`;
   // ───────────────────────── GUÍA: armar oraciones, tiempos, conjugador, moldes ─────────────────────────
   const G = () => window.GRAMMAR;
   const SUBJ = [["I", "yo"], ["you", "tú / usted"], ["he", "él"], ["she", "ella"], ["it", "eso (cosa, clima)"], ["we", "nosotros"], ["they", "ellos / ellas"]];
-  const DOUBLE = new Set(["run", "swim", "stop", "plan", "get", "sit", "put", "shop"]);
+  const DOUBLE = new Set(["run", "swim", "stop", "plan", "get", "sit", "put", "shop", "begin", "forget", "cut", "hit", "win", "let", "set", "hug", "grab", "prefer"]);
   function third(v) {
     if (v === "have") return "has"; if (v === "be") return "is";
     if (/(s|sh|ch|x|z|o)$/.test(v)) return v + "es";
@@ -1465,11 +1467,137 @@ SCORE: ${score}/10`;
   }
   const ROLE = { who: "¿Quién?", aux: "Ayudante", verb: "Verbo", what: "¿Qué? / resto", wh: "Pregunta", link: "Conector", where: "¿Dónde?", when: "¿Cuándo?" };
   function chips(parts) { return `<div class="sent">${parts.map(([r, t, es]) => `<span class="blk r-${r}"><b>${esc(t)}</b><small>${esc(es || ROLE[r] || "")}</small></span>`).join("")}</div>`; }
+
+  // ───────────────────────── Verbos dentro del texto: detectar, explicar la forma y el porqué ─────────────────────────
+  let LEX = null;
+  function lexicon() {
+    if (LEX) return LEX;
+    LEX = {};
+    const add = (w, base, type) => { (LEX[w] = LEX[w] || []).push({ base, type }); };
+    G().verbs.forEach(([base, past, pp]) => {
+      if (base === "be") return;
+      add(base, base, "base"); add(third(base), base, "s3"); add(ingForm(base), base, "ing");
+      add(past, base, past === base ? "same" : "past"); if (pp !== past) add(pp, base, "pp");
+      else if (past !== base) LEX[past][LEX[past].length - 1].type = "pastpp";
+    });
+    [["am", "be", "be_am"], ["is", "be", "be_is"], ["are", "be", "be_are"], ["was", "be", "be_was"], ["were", "be", "be_were"], ["been", "be", "pp"], ["being", "be", "ing"], ["be", "be", "base"]].forEach(([w, b, t]) => add(w, b, t));
+    return LEX;
+  }
+  const BE_PREV = new Set(["am", "is", "are", "was", "were", "be", "been", "i'm", "you're", "we're", "they're", "he's", "she's", "it's", "that's", "there's", "isn't", "aren't", "wasn't", "weren't"]);
+  const ING_AFTER = new Set(["like", "likes", "love", "loves", "enjoy", "enjoys", "hate", "stop", "stopped", "start", "keep", "finish", "mind", "go", "went", "about", "of", "for", "at", "in", "before", "after", "without", "by", "how", "into", "miss", "spend", "prefer"]);
+  const MODALS = new Set(["can", "can't", "cannot", "could", "couldn't", "will", "won't", "would", "wouldn't", "should", "shouldn't", "must", "might", "may", "let's", "please", "i'll", "you'll", "we'll", "they'll", "he'll", "she'll", "it'll", "i'd", "you'd", "we'd"]);
+  const DETERMINERS = new Set(["a", "an", "the", "my", "your", "his", "her", "our", "their", "this", "that", "some", "any", "no", "every", "one", "its", "these", "those", "nice", "good", "great", "big", "first", "last", "next"]);
+  const NOUN_AFTER_TO = new Set(["go", "goes", "went", "come", "came", "coming", "get", "got", "back", "walk", "drive", "way", "listen", "talk", "next", "used", "close"]);
+  const SUBJ_PLAIN = new Set(["i", "you", "we", "they"]); const SUBJ_3 = new Set(["he", "she", "it"]);
+  const clean = (w) => (w || "").toLowerCase().replace(/[“”"¿?¡!.,;:()…]/g, "").replace(/’/g, "'");
+  // Envuelve los verbos de un texto en botones tocables (escapa todo lo demás)
+  function annotate(text) {
+    const lex = lexicon();
+    const toks = String(text || "").split(/(\s+)/);
+    const words = toks.map((t) => (/^\s+$/.test(t) ? null : clean(t)));
+    const idx = []; words.forEach((w, i) => { if (w !== null) idx.push(i); });
+    const pastMark = /\b(yesterday|last (night|week|weekend|month|year|time)|ago|in (19|20)\d\d)\b/i.test(String(text || "")) ? 1 : 0;
+    return toks.map((t, i) => {
+      if (words[i] === null) return t;
+      const k = idx.indexOf(i); const w = words[i];
+      const prev = k > 0 ? words[idx[k - 1]] : ""; const prev2 = k > 1 ? words[idx[k - 2]] : ""; const next = k < idx.length - 1 ? words[idx[k + 1]] : "";
+      if (!lex[w] || w.length < 2) return esc(t);
+      if (DETERMINERS.has(prev) && w !== "be") return esc(t);
+      if (prev === "to" && NOUN_AFTER_TO.has(prev2)) return esc(t);
+      if (w === "like" && /^(look|looks|looked|feel|feels|sound|sounds|something|just|kinda|is|was)$/.test(prev)) return esc(t);
+      if (w === "thanks" || w === "please") return esc(t);
+      if (w === "left" && /^(turn|on|to|keep|go|the|your|my|stay|make|take)$/.test(prev)) return esc(t);
+      const m = t.match(/^([^A-Za-z']*)([A-Za-z'’]+)([^A-Za-z']*)$/);
+      if (!m) return esc(t);
+      return `${esc(m[1])}<button class="vw" data-action="verbInfo" data-w="${esc(w)}" data-p="${esc(prev)}" data-p2="${esc(prev2)}" data-n="${esc(next)}" data-first="${k === 0 || /[.!?]$/.test(toks[idx[k - 1]] || "") ? 1 : 0}" data-past="${pastMark}">${esc(m[2])}</button>${esc(m[3])}`;
+    }).join("");
+  }
+  // Decide la forma y explica por qué va así en esta frase
+  function explainVerb(w, prev, prev2, next, first, pastMark) {
+    const opts = lexicon()[w] || []; if (!opts.length) return null;
+    const o = opts[0]; const base = o.base;
+    const info = G().verbs.find((v) => v[0] === base);
+    const f = (type, name, why) => ({ base, type, name, why, info });
+    const subjNext = SUBJ_PLAIN.has(next) || SUBJ_3.has(next) || /^(your|my|the|his|her|our|their)$/.test(next);
+    if (base === "do" && /^(do|does|did)$/.test(w) && (first == 1 || subjNext || /^(what|where|when|why|how|who)$/.test(prev))) {
+      const t = { do: "presente (I / you / we / they)", does: "presente con he / she / it", did: "pasado (todas las personas)" }[w];
+      return f(w === "did" ? "past" : w === "does" ? "s3" : "base", "Ayudante de pregunta", `Aquí <b>${w}</b> no significa “hacer”: es el <b>ayudante</b> que se pone al inicio para hacer una pregunta en ${t}. Después va el sujeto y el verbo en forma base: <i>${w.charAt(0).toUpperCase() + w.slice(1)} you like it?</i>`);
+    }
+    if (base === "be") {
+      const map = { am: "con I (yo)", is: "con he / she / it (y una cosa)", are: "con you / we / they (y varias cosas)", was: "pasado con I / he / she / it", were: "pasado con you / we / they" };
+      if (map[w]) return f(w === "was" || w === "were" ? "past" : "s3", w === "was" || w === "were" ? "Pasado de be" : "Presente de be", `<b>be</b> = ser / estar. Se usa <b>${w}</b> ${map[w]}. Ej: <i>${w === "am" ? "I am tired" : w === "is" ? "She is happy" : w === "are" ? "They are here" : w === "was" ? "I was tired" : "We were late"}</i>. También es el ayudante de los tiempos con -ing (I'm working) y de “going to”.`);
+      if (w === "been") return f("pp", "Participio de be", "Va después de have/has: <i>I've been to Mexico</i> = he estado en México.");
+      if (w === "being") return f("ing", "Forma -ing de be", "Se usa poco: <i>You're being silly</i> = estás siendo tonto (en este momento).");
+      return f("base", "Forma base de be", "Después de to, will, can, etc.: <i>I want to be ready. I'll be there.</i>");
+    }
+    const has = (t) => opts.some((x) => x.type === t);
+    const isPPctx = /^(have|has|had|i've|you've|we've|they've|he's|she's|it's|haven't|hasn't|never|already|just|ever)$/.test(prev) || (/^(never|already|just|ever)$/.test(prev) && /^(have|has|i've|you've|we've|they've)$/.test(prev2));
+    const isPassive = /^(is|are|was|were|be|been|being|get|got)$/.test(prev);
+    if (has("ing")) {
+      if (w === "going" && next === "to") return f("ing", "going to (futuro)", "<b>be + going to + verbo</b> = voy a… (un plan). Ej: <i>I'm going to call you</i>. Al hablar suena <b>gonna</b>.");
+      if (BE_PREV.has(prev) || /'(m|re|s)$/.test(prev)) return f("ing", "Forma -ing (continuo)", `Va después de <b>${esc(prev)}</b> (am / is / are / was / were): la acción <b>está pasando</b> en ese momento. <i>I'm ${w}</i> = estoy …ando / …iendo.`);
+      if (ING_AFTER.has(prev)) return f("ing", "Forma -ing", `Después de <b>${esc(prev)}</b> el verbo va con <b>-ing</b>. Pasa con gustos (like, love, enjoy, hate), con stop / keep / finish y después de preposiciones (about, for, before, after, without). Ej: <i>I love ${w}</i>.`);
+      return f("ing", "Forma -ing como actividad", `Aquí el verbo funciona como <b>nombre de una actividad</b>: <i>${w.charAt(0).toUpperCase() + w.slice(1)} is fun</i> = ${info ? info[3].split(" / ")[0] : base} es divertido.`);
+    }
+    if (has("s3")) return f("s3", "Presente con he / she / it (+s)", `Lleva <b>-s</b> porque el sujeto es <b>he, she, it</b> o una persona (my mom, Tom). Con I / you / we / they va sin -s: <i>I ${base}</i> → <i>She ${w}</i>. En negativo y pregunta la -s se pasa a does: <i>She doesn't ${base}</i>.`);
+    const baseWhy = () => {
+      if (prev === "to") return `Va después de <b>to</b>: cuando hay dos verbos seguidos, el segundo va con <b>to + forma base</b> (want to, need to, like to, have to, going to). Ej: <i>I want to ${base}</i>.`;
+      if (/^(did|didn't)$/.test(prev) || /^(did|didn't)$/.test(prev2)) return "Después de <b>did / didn't</b> el verbo vuelve a la forma base, porque el pasado ya lo marca “did”. Ej: <i>Did you " + base + "?</i> (no “did you " + (info ? info[1] : base) + "”).";
+      if (/^(does|doesn't)$/.test(prev) || /^(does|doesn't)$/.test(prev2)) return "Después de <b>does / doesn't</b> el verbo va sin -s: la -s ya está en “does”. Ej: <i>She doesn't " + base + "</i>.";
+      if (/^(do|don't)$/.test(prev) || /^(do|don't)$/.test(prev2)) return "Con el ayudante <b>do / don't</b> (preguntas y negativas en presente) el verbo va en forma base. Ej: <i>Do you " + base + "?</i>";
+      if (MODALS.has(prev) || MODALS.has(prev2)) return `Después de <b>${esc(MODALS.has(prev) ? prev : prev2)}</b> (can, will, should, could, would, let's…) el verbo va en forma base y <b>sin “to”</b>. Ej: <i>I can ${base}</i>.`;
+      if (first == 1 || !prev) return `Al inicio de la frase y sin sujeto es una <b>orden o indicación</b> (imperativo): <i>${base.charAt(0).toUpperCase() + base.slice(1)}!</i> Se usa para dar instrucciones, ofrecer o desear: <i>Turn left. Have a good one.</i>`;
+      if (SUBJ_PLAIN.has(prev) || /^(people|guys|kids|we|they)$/.test(prev)) return `Presente simple con <b>${esc(prev)}</b>: forma base, sin -s. Ej: <i>${prev === "i" ? "I" : prev} ${base} every day</i>.`;
+      return "Forma base del verbo: la que aparece en el diccionario.";
+    };
+    if (has("same")) {
+      const looksPast = !(prev === "to" || /^(did|didn't|does|doesn't|do|don't)$/.test(prev) || MODALS.has(prev)) && (SUBJ_3.has(prev) || pastMark == 1 || /ed$/.test(next) || /^(yesterday|last)$/.test(next));
+      if (isPPctx) return f("pp", "Participio (presente perfecto)", `Va después de <b>${esc(prev)}</b>: <b>have / has + participio</b> = he / ha …ado. En <b>${w}</b> la base, el pasado y el participio se escriben igual.`);
+      if (looksPast) return f("past", "Pasado", `Pasado: acción terminada. En <b>${w}</b> la base y el pasado se escriben igual (${w} – ${w} – ${w}); por el contexto se sabe que es pasado.`);
+      return f("base", "Forma base", baseWhy() + ` (Ojo: <b>${w}</b> se escribe igual en presente, pasado y participio.)`);
+    }
+    if (has("pastpp")) {
+      if (isPPctx) return f("pp", "Participio (presente perfecto)", `Después de <b>${esc(prev)}</b>: <b>have / has + participio</b> = he / ha …ado. Para este verbo el pasado y el participio son iguales: <i>${w}</i>.`);
+      if (isPassive) return f("pp", "Participio (voz pasiva)", `<b>be + participio</b> = algo es / fue hecho por alguien. Ej: <i>It was ${w}</i>.`);
+      return f("past", "Pasado simple", `<b>Pasado</b>: una acción terminada (ayer, la semana pasada, en 2020). Es igual para todas las personas: <i>I ${w}, she ${w}</i>. En negativo y pregunta se usa did + forma base: <i>Did you ${base}?</i>`);
+    }
+    if (has("past")) return f("past", "Pasado simple", `<b>Pasado</b>: acción terminada. Igual para todas las personas: <i>I ${w}, they ${w}</i>. En pregunta y negativo vuelve a la base: <i>Did you ${base}? I didn't ${base}.</i>`);
+    if (has("pp") && (isPPctx || isPassive)) return f("pp", isPassive ? "Participio (voz pasiva)" : "Participio (presente perfecto)", isPassive ? `<b>be + participio</b>: algo es / fue hecho. Ej: <i>It was ${w}</i>.` : `Después de <b>have / has</b>: experiencias o algo que empezó antes. Ej: <i>I've ${w}</i> = he …ado / …ido.`);
+    return f("base", "Forma base", baseWhy());
+  }
+  function formsRow(base, current) {
+    const v = G().verbs.find((x) => x[0] === base); if (!v) return "";
+    const rows = base === "be" ? [["base", "Base", "be"], ["s3", "Presente", "am / is / are"], ["ing", "-ing", "being"], ["past", "Pasado", "was / were"], ["pp", "Participio", "been"]]
+      : [["base", "Base", base], ["s3", "+s (he/she)", third(base)], ["ing", "-ing", ingForm(base)], ["past", "Pasado", v[1]], ["pp", "Participio", v[2]]];
+    return `<div class="forms">${rows.map(([t, n, w]) => `<button class="form ${t === current ? "on" : ""}" data-action="say" data-text="${esc(w)}"><small>${n}</small><b>${esc(w)}</b></button>`).join("")}</div>`;
+  }
+  function showVerbSheet(d) {
+    const r = explainVerb(d.w, d.p, d.p2, d.n, d.first, d.past);
+    if (!r) return;
+    const sh = $("#vsheet");
+    sh.innerHTML = `<div class="vs-card" role="dialog" aria-label="Verbo ${esc(d.w)}"><button class="vs-x" data-action="vsClose" aria-label="Cerrar">✕</button>
+      <div class="vs-head"><button class="icon" data-action="say" data-text="${esc(d.w)}">🔊</button> <b class="vs-w">${esc(d.w)}</b> <span class="pill">${esc(r.name)}</span></div>
+      <p>Verbo <b>${esc(r.base)}</b>${r.info ? ` = <b>${esc(r.info[3])}</b>` : ""}</p>
+      <div class="vs-why">💡 <b>¿Por qué va así aquí?</b><br>${r.why}</div>
+      <p class="muted">Las 5 formas de <b>${esc(r.base)}</b> (la que ves está resaltada):</p>${formsRow(r.base, r.type)}
+      <button class="btn small" data-action="openVerb" data-v="${esc(r.base)}">📖 Ver todo sobre “${esc(r.base)}” (ejemplos en todos los tiempos)</button></div>`;
+    sh.hidden = false;
+  }
+
+  window.EC_DEBUG = { explainVerb: (...a) => explainVerb(...a), annotate: (t) => annotate(t) };
   function viewGuide() {
-    const tab = ctx.gtab || "build";
-    const tabs = [["build", "🧱 Armar"], ["tenses", "⏱ Tiempos"], ["conj", "🔧 Conjugador"], ["patterns", "🧩 Moldes"], ["kate", "🤖 Con " + TEACHER]];
+    const tab = ctx.gtab || "hub";
+    const HUB = [["verbs", "📖", "Verbos", "Más de 130 verbos importantes: sus 5 formas y ejemplos"], ["vocab", "🗂", "Vocabulario por temas", "255 palabras: casa, comida, trabajo, salud, ciudad…"], ["build", "🧱", "Armar oraciones", "El orden de las piezas y ejemplos resueltos"], ["tenses", "⏱", "Tiempos verbales", "Presente, pasado, futuro: afirmativo, negativo y pregunta"], ["conj", "🔧", "Conjugador", "Arma cualquier oración y mira cómo cambia"], ["patterns", "🧩", "Moldes de frases", "I want to…, I'd like to…, because, so…"], ["kate", "🤖", "Arma tu frase con " + TEACHER, "Escribe en español y te lo arma en inglés"]];
+    if (tab === "hub") {
+      return `<section class="card hero slim"><h1>📚 Aprender</h1><p class="muted">Todo lo que necesitas para entender y armar el inglés. Elige qué estudiar.</p></section>
+        <section class="card"><div class="hub">${HUB.map(([k, i, t, d]) => `<button class="hub-tile" data-action="gtab" data-t="${k}"><span class="hub-i">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></button>`).join("")}</div></section>
+        <section class="card tip-card">💡 <b>Tip:</b> en las conversaciones, escenas y ejemplos, los <span class="vw demo">verbos subrayados</span> se pueden tocar: te dicen qué forma es y por qué va así en esa frase.</section>`;
+    }
+    const cur = HUB.find((h) => h[0] === tab) || HUB[0];
     let body = "";
-    if (tab === "build") {
+    if (tab === "verbs") body = verbsPage();
+    else if (tab === "vocab") body = vocabPage();
+    else if (tab === "build") {
       body = `<section class="card"><h2>🧱 El orden de una oración en inglés</h2>
         <p>En inglés el orden de las piezas casi nunca cambia. Si lo aprendes, puedes armar cualquier oración con tu vocabulario:</p>
         <div class="order">${G().order.map(([r, q, n, ex, note]) => `<div class="ord r-${r}"><b>${q}</b><span>${n}</span><small>${esc(ex)}</small></div>`).join('<span class="arrow">→</span>')}</div>
@@ -1478,7 +1606,7 @@ SCORE: ${score}/10`;
       <section class="card"><h2>📏 7 reglas para no equivocarte</h2>${G().rules.map(([t, d], i) => `<div class="rule"><span class="rnum">${i + 1}</span><div><b>${t}</b><p>${d}</p></div></div>`).join("")}</section>
       <section class="card"><h2>✍️ Ejemplos resueltos (del español al inglés)</h2><p class="muted">Así se piensa una oración: separa la idea en piezas y pon cada una en su lugar.</p>
         ${G().examples.map((x) => `<div class="worked"><div class="w-es">🇪🇸 ${esc(x.es)}</div>${chips(x.blocks)}
-          <div class="w-en"><button class="icon" data-action="say" data-text="${esc(x.en)}">🔊</button> 🇺🇸 <b>${esc(x.en)}</b></div><p class="muted">${x.why}</p></div>`).join("")}</section>`;
+          <div class="w-en"><button class="icon" data-action="say" data-text="${esc(x.en)}">🔊</button> 🇺🇸 <b>${annotate(x.en)}</b></div><p class="muted">${x.why}</p></div>`).join("")}</section>`;
     } else if (tab === "tenses") {
       const t = G().tenses.find((x) => x.id === (ctx.tense || "pres"));
       body = `<section class="card"><div class="tchips">${G().tenses.map((x) => `<button class="chip-btn ${x.id === t.id ? "" : "ghost"}" data-action="pickTense" data-t="${x.id}">${esc(x.name)}</button>`).join("")}</div></section>
@@ -1488,7 +1616,7 @@ SCORE: ${score}/10`;
           <h3>❌ Negativo</h3>${t.neg.map(([a, b]) => `<div class="frow"><span class="blk r-who"><b>${esc(a)}</b></span><span class="blk r-aux"><b>${esc(b)}</b></span></div>`).join("")}
           <h3>❓ Pregunta</h3>${t.q.map(([a, b, c]) => `<div class="frow"><span class="blk r-aux"><b>${esc(a)}</b></span><span class="blk r-who"><b>${esc(b)}</b></span><span class="blk r-verb"><b>${esc(c)}</b></span></div>`).join("")}
           <p>💬 <b>Respuesta corta:</b> ${esc(t.short)}</p><p>🔹 <b>Con “be”:</b> ${esc(t.be)}</p></div>
-          <h3>Ejemplos</h3>${t.ex.map(([en, es]) => `<div class="starter"><button class="icon" data-action="say" data-text="${esc(en)}">🔊</button><div><b>${esc(en)}</b><div class="muted">${esc(es)}</div></div></div>`).join("")}
+          <h3>Ejemplos</h3>${t.ex.map(([en, es]) => `<div class="starter"><button class="icon" data-action="say" data-text="${esc(en)}">🔊</button><div><b>${annotate(en)}</b><div class="muted">${esc(es)}</div></div></div>`).join("")}
           <div class="ctx-row watch"><span>⚠️</span><div>${esc(t.tip)}</div></div>
           <button class="btn" data-action="tryConj" data-t="${t.id}">🔧 Practicarlo en el conjugador</button></section>`;
     } else if (tab === "conj") {
@@ -1515,7 +1643,7 @@ SCORE: ${score}/10`;
     } else if (tab === "patterns") {
       body = `<section class="card"><h2>🧩 Moldes para armar frases</h2><p class="muted">Toma un molde y cambia el verbo por el que necesites. Así usas tu vocabulario sin pensar en la gramática.</p>
         ${G().patterns.map(([m, es, ex, use]) => `<div class="pat"><div><b class="pm">${esc(m)}</b> <span class="muted">= ${esc(es)}</span></div>
-          <div><button class="icon" data-action="say" data-text="${esc(ex)}">🔊</button> <i>${esc(ex)}</i></div><small class="muted">${esc(use)}</small></div>`).join("")}</section>`;
+          <div><button class="icon" data-action="say" data-text="${esc(ex)}">🔊</button> <i>${annotate(ex)}</i></div><small class="muted">${esc(use)}</small></div>`).join("")}</section>`;
     } else {
       const k = ctx.kb || {};
       body = `<section class="card"><h2>🤖 Arma tu frase con ${TEACHER}</h2>
@@ -1528,8 +1656,79 @@ SCORE: ${score}/10`;
         : `<p class="muted">${window.ARTIFACT_MODE ? "El profesor IA no está disponible en esta vista. Abre la app con tu cuenta de Claude iniciada." : "Activa el profesor IA en Ajustes para usar esta parte."} Mientras tanto, mira los ejemplos resueltos en “🧱 Armar” y usa los “🧩 Moldes”.</p>`}
       </section>`;
     }
-    return `<section class="card hero slim"><h1>📐 Guía: cómo armar oraciones</h1><p class="muted">Vocabulario + orden + tiempo verbal = oraciones correctas.</p></section>
-      <div class="tabs five">${tabs.map(([k, n]) => `<button class="${tab === k ? "on" : ""}" data-action="gtab" data-t="${k}">${n}</button>`).join("")}</div>${body}`;
+    return `<section class="card hero slim"><button class="link" data-action="gtab" data-t="hub">← Aprender</button><h1>${cur[1]} ${esc(cur[2])}</h1><p class="muted">${esc(cur[3])}</p></section>${body}`;
+  }
+  // 📖 Verbos: lista, búsqueda y ficha con las 5 formas + ejemplos en todos los tiempos
+  function verbsPage() {
+    if (ctx.verb) {
+      const v = G().verbs.find((x) => x[0] === ctx.verb);
+      const [base, past, pp, es, comp] = v;
+      const ex = (o) => conjugate(Object.assign({ verb: base, comp, wh: "" }, o));
+      const lines = [
+        ["Presente (I / you / we / they)", ex({ subj: "I", tense: "pres", type: "aff" }), "Hábitos y rutinas"],
+        ["Presente (he / she / it)", ex({ subj: "she", tense: "pres", type: "aff" }), "Con he / she / it lleva -s"],
+        ["Presente negativo", ex({ subj: "I", tense: "pres", type: "neg" }), "don't / doesn't + base"],
+        ["Pregunta en presente", ex({ subj: "you", tense: "pres", type: "q" }), "Do / Does + sujeto + base"],
+        ["Ahora mismo (continuo)", ex({ subj: "I", tense: "cont", type: "aff" }), "am / is / are + -ing"],
+        ["Pasado", ex({ subj: "I", tense: "past", type: "aff" }), "Acción terminada"],
+        ["Pasado negativo", ex({ subj: "I", tense: "past", type: "neg" }), "didn't + base"],
+        ["Pregunta en pasado", ex({ subj: "you", tense: "past", type: "q" }), "Did + sujeto + base"],
+        ["Futuro (plan)", ex({ subj: "I", tense: "goingto", type: "aff" }), "am / is / are going to + base"],
+        ["Futuro (decisión / promesa)", ex({ subj: "I", tense: "will", type: "aff" }), "will + base"],
+        ["Experiencia (presente perfecto)", ex({ subj: "I", tense: "perf", type: "aff" }), "have / has + participio"],
+        ["Puedo", ex({ subj: "I", tense: "can", type: "aff" }), "can + base"]
+      ].filter(([n]) => !(base === "be" && n.startsWith("Ahora")));
+      return `<section class="card"><button class="link" data-action="verbBack">← Todos los verbos</button>
+        <h2><button class="icon" data-action="say" data-text="${esc(base)}">🔊</button> ${esc(base)} <span class="muted">= ${esc(es)}</span></h2>
+        ${formsRow(base, "")}
+        <p class="muted">${past.endsWith("ed") || past === base + "d" ? "✅ Verbo <b>regular</b>: el pasado se forma con -ed." : "⚠️ Verbo <b>irregular</b>: el pasado y el participio se aprenden de memoria."}</p></section>
+        <section class="card"><h2>Cómo se usa en cada tiempo</h2>
+        ${lines.map(([n, r, why]) => `<div class="vex"><small>${esc(n)} · <span class="muted">${esc(why)}</span></small>
+          <div><button class="icon" data-action="say" data-text="${esc(r.short || r.full)}">🔊</button> <b>${esc(r.full)}</b>${r.short ? ` <span class="muted">(al hablar: ${esc(r.short)})</span>` : ""}</div></div>`).join("")}
+        <div class="row"><button class="btn small" data-action="verbCard" data-v="${esc(base)}">➕ Guardar en mis tarjetas</button>
+        <button class="btn small" data-action="verbConj" data-v="${esc(base)}">🔧 Practicarlo en el conjugador</button></div></section>`;
+    }
+    const cat = ctx.vcat || "top";
+    const cats = G().verbCats;
+    const list = G().verbs.filter((v) => cat === "all" || v[5] === cat);
+    return `<section class="card"><h2>🧩 Las 5 formas de un verbo</h2>
+        <p>Cada verbo cambia de forma según la frase. Con <b>dance</b> (bailar):</p>
+        ${formsRow("dance", "")}
+        <div class="five">
+          <div><b>dance</b> — forma base: con I / you / we / they, después de <i>to</i>, <i>can</i>, <i>will</i>, <i>don't</i>, <i>did</i>. <i>I dance. I want to dance.</i></div>
+          <div><b>dances</b> — presente con he / she / it. <i>She dances every Friday.</i></div>
+          <div><b>dancing</b> — después de am / is / are (está pasando), de like / love / enjoy, o como actividad. <i>I'm dancing. I love dancing.</i></div>
+          <div><b>danced</b> — pasado: acción terminada. <i>We danced all night.</i></div>
+          <div><b>danced</b> — participio: después de have / has. <i>I've never danced salsa.</i></div>
+        </div></section>
+      <section class="card"><input id="verbSearch" type="search" placeholder="Buscar un verbo en inglés o en español…" autocomplete="off">
+        <div class="row">${Object.entries(cats).map(([k, n]) => `<button class="chip-btn ${cat === k ? "" : "ghost"}" data-action="vcat" data-c="${k}">${n}</button>`).join("")}<button class="chip-btn ${cat === "all" ? "" : "ghost"}" data-action="vcat" data-c="all">Todos (${G().verbs.length})</button></div>
+        <div class="vlist">${list.map(([b, pa, pp, es]) => `<button class="vitem" data-action="openVerb" data-v="${esc(b)}" data-search="${esc((b + " " + pa + " " + pp + " " + es).toLowerCase())}"><b>${esc(b)}</b><span class="muted">${esc(es)}</span><small>${esc(b)} · ${esc(pa)} · ${esc(pp)}</small></button>`).join("")}</div></section>`;
+  }
+  // 🗂 Vocabulario por temas
+  function vocabPage() {
+    const V = window.VOCAB || [];
+    if (ctx.topic) {
+      const t = V.find((x) => x.id === ctx.topic);
+      const q = ctx.vq && ctx.vq.topic === t.id ? ctx.vq : null;
+      return `<section class="card"><button class="link" data-action="topicBack">← Todos los temas</button>
+        <h2>${t.icon} ${esc(t.title)} <span class="muted">(${t.words.length})</span></h2>
+        <div class="row"><button class="btn small primary" data-action="topicQuiz" data-id="${t.id}">🎯 Practicar este tema</button><button class="btn small" data-action="topicCards" data-id="${t.id}">➕ Pasar todo a mis tarjetas</button></div>
+        ${q ? topicQuizHTML(q) : ""}
+        <div class="vocab">${t.words.map(([en, es, ex]) => `<div class="v"><div><b>${esc(en)}</b> <span class="muted">— ${esc(es)}</span><div class="ex">${annotate(ex)}</div></div>
+          <button class="icon" data-action="say" data-text="${esc(en.split(" / ")[0] + ". " + ex)}" aria-label="Escuchar">🔊</button></div>`).join("")}</div></section>`;
+    }
+    const total = V.reduce((n, t) => n + t.words.length, 0);
+    return `<section class="card"><p>${total} palabras y expresiones de uso diario en EE. UU., organizadas por tema. Toca un tema para estudiarlo, escucharlo y practicarlo.</p>
+      <div class="hub">${V.map((t) => { const inCards = t.words.filter(([en]) => S.cards["topic:" + en.toLowerCase().replace(/[^a-z0-9' ]/g, "").slice(0, 60)]).length;
+        return `<button class="hub-tile" data-action="openTopic" data-id="${t.id}"><span class="hub-i">${t.icon}</span><span><b>${esc(t.title)}</b><small>${t.words.length} palabras${inCards ? ` · ${inCards} en tus tarjetas` : ""}</small></span></button>`; }).join("")}</div></section>`;
+  }
+  function topicQuizHTML(q) {
+    if (q.i >= q.items.length) return `<div class="tq done"><b>🎯 Resultado: ${q.ok} de ${q.items.length}</b><p class="muted">${q.ok === q.items.length ? "¡Perfecto!" : "Las que fallaste quedaron en tus tarjetas para repasarlas."}</p><button class="btn small" data-action="topicQuiz" data-id="${q.topic}">🔁 Otra ronda</button></div>`;
+    const it = q.items[q.i];
+    return `<div class="tq"><small class="muted">Pregunta ${q.i + 1} de ${q.items.length}</small><div class="q">¿Cómo se dice “${esc(it.es)}”?</div>
+      <div class="options">${it.opts.map((o) => `<button class="opt ${q.pick ? (o === it.en ? "right" : o === q.pick ? "wrong" : "") : ""}" ${q.pick ? "disabled" : ""} data-action="tqAns" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+      ${q.pick ? `<button class="btn small primary" data-action="tqNext">Siguiente →</button>` : ""}</div>`;
   }
 
   // ───────────────────────── PROGRESO ─────────────────────────
@@ -1644,7 +1843,24 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
-      case "gtab": ctx.gtab = el.dataset.t; render(); break;
+      case "gtab": ctx.gtab = el.dataset.t === "hub" ? null : el.dataset.t; ctx.verb = null; ctx.topic = null; render(); window.scrollTo(0, 0); break;
+      case "verbInfo": showVerbSheet({ w: el.dataset.w, p: el.dataset.p, p2: el.dataset.p2, n: el.dataset.n, first: el.dataset.first, past: el.dataset.past }); break;
+      case "vsClose": $("#vsheet").hidden = true; break;
+      case "openVerb": $("#vsheet").hidden = true; stopRec(); go("guide", { gtab: "verbs", verb: el.dataset.v }); break;
+      case "verbBack": ctx.verb = null; render(); break;
+      case "vcat": ctx.vcat = el.dataset.c; rerenderKeepScroll(); break;
+      case "verbCard": { const v = G().verbs.find((x) => x[0] === el.dataset.v); toast(addCard("verb", `${v[0]} · ${v[1]} · ${v[2]}`, v[3], `-s: ${third(v[0])} · -ing: ${ingForm(v[0])}`) ? "Verbo guardado en tus tarjetas" : "Ya estaba en tus tarjetas"); save(); break; }
+      case "verbConj": { const v = G().verbs.find((x) => x[0] === el.dataset.v); ctx.gtab = "conj"; ctx.verb = null; ctx.cj = { subj: "she", verb: v[0], tense: "pres", type: "aff", wh: "", comp: v[4] }; render(); window.scrollTo(0, 0); break; }
+      case "openTopic": ctx.topic = el.dataset.id; ctx.vq = null; render(); window.scrollTo(0, 0); break;
+      case "topicBack": ctx.topic = null; ctx.vq = null; render(); break;
+      case "topicCards": { const t = window.VOCAB.find((x) => x.id === el.dataset.id); let n = 0; t.words.forEach(([en, es, ex]) => { if (addCard("topic", en, es, ex)) n++; }); save(); toast(n ? `${n} palabras agregadas a tus tarjetas` : "Ya estaban todas en tus tarjetas"); rerenderKeepScroll(); break; }
+      case "topicQuiz": {
+        const t = window.VOCAB.find((x) => x.id === el.dataset.id); const pool = t.words.map((w) => w[0]);
+        ctx.vq = { topic: t.id, i: 0, ok: 0, pick: null, items: shuffle(t.words).slice(0, 8).map(([en, es]) => ({ en, es, opts: shuffle([en, ...shuffle(pool.filter((x) => x !== en)).slice(0, 3)]) })) };
+        rerenderKeepScroll(); break;
+      }
+      case "tqAns": { const q = ctx.vq; const it = q.items[q.i]; if (q.pick) break; q.pick = el.dataset.v; const ok = q.pick === it.en; if (ok) q.ok++; else { addCard("topic", it.en, it.es, ""); } record(curUnit().id, "vocab", ok); speak(it.en); save(); rerenderKeepScroll(); break; }
+      case "tqNext": ctx.vq.i++; ctx.vq.pick = null; rerenderKeepScroll(); break;
       case "pickTense": ctx.tense = el.dataset.t; rerenderKeepScroll(); break;
       case "tryConj": ctx.gtab = "conj"; ctx.cj = Object.assign(ctx.cj || { subj: "she", verb: "work", type: "aff", wh: "", comp: "from home" }, { tense: el.dataset.t }); render(); window.scrollTo(0, 0); break;
       case "cjCard": { const r = conjugate(ctx.cj); const t = G().tenses.find((x) => x.id === ctx.cj.tense); toast(addCard("custom", r.short || r.full, t.name + " · " + t.es, "🔧 " + r.parts.map((p) => p[1]).join(" + ")) ? "Guardada en tus tarjetas" : "Ya estaba en tus tarjetas"); save(); break; }
@@ -1727,7 +1943,7 @@ Muestra cómo hablan de verdad en Estados Unidos sobre este tema, en lenguaje co
       case "vfilter": ctx.vfilter = el.dataset.f; render(); break;
       case "studyFiltered": {
         const f = ctx.vfilter || "all"; let n = 0;
-        Object.values(S.cards).forEach((c) => { const ok = f === "all" ? true : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? ["custom", "conv", "real"].includes(c.unitId) : c.box >= 4; if (ok && c.due > today()) { c.due = today(); n++; } });
+        Object.values(S.cards).forEach((c) => { const ok = f === "all" ? true : f === "learning" ? c.box < 4 && !c.mistake : f === "mistakes" ? !!c.mistake : f === "mine" ? ["custom", "conv", "real", "verb", "topic"].includes(c.unitId) : c.box >= 4; if (ok && c.due > today()) { c.due = today(); n++; } });
         save(); ctx.tab = "today"; render(); toast(n ? `${n} tarjetas añadidas al repaso de hoy` : "Ya estaban en tu repaso de hoy"); break;
       }
       case "delCard": {
@@ -1979,8 +2195,8 @@ Usa exactamente estas secciones:
   }
   function scrollChat() { const b = $("#chat"); if (b) b.scrollTop = b.scrollHeight; const f = $(".chat-form"); if (f) f.scrollIntoView({ block: "nearest" }); }
 
-  document.addEventListener("click", (e) => { if (e.target.id === "celebrate") e.target.hidden = true; });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("#celebrate").hidden) $("#celebrate").hidden = true; });
+  document.addEventListener("click", (e) => { if (e.target.id === "celebrate" || e.target.id === "vsheet") e.target.hidden = true; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("#celebrate").hidden = true; $("#vsheet").hidden = true; } });
   document.addEventListener("change", (e) => {
     const el = e.target;
     if (el.dataset.action === "cj") { ctx.cj[el.dataset.k] = el.value; if (el.dataset.k === "verb") { const v = G().verbs.find((x) => x[0] === el.value); ctx.cj.comp = v ? v[4] : ""; } if (el.dataset.k === "type" && el.value !== "q") ctx.cj.wh = ""; rerenderKeepScroll(); return; }
@@ -1995,6 +2211,11 @@ Usa exactamente estas secciones:
     if (e.target.dataset && e.target.dataset.action === "cjc") {
       ctx.cj.comp = e.target.value; const r = conjugate(ctx.cj); const b = $(".big-sent");
       if (b) b.lastChild.textContent = " " + r.full; const sc = $(".result .sent"); if (sc) sc.outerHTML = chips(r.parts);
+    }
+    if (e.target.id === "verbSearch") {
+      const q = e.target.value.toLowerCase().trim();
+      document.querySelectorAll(".vitem").forEach((r) => { r.hidden = !!q && !r.dataset.search.includes(q); });
+      if (q && !document.querySelector(".vitem:not([hidden])") && ctx.vcat !== "all") { ctx.vcat = "all"; rerenderKeepScroll(); const i = $("#verbSearch"); if (i) { i.value = q; i.focus(); i.dispatchEvent(new Event("input", { bubbles: true })); } }
     }
     if (e.target.id === "vsearch") {
       const q = e.target.value.toLowerCase().trim();

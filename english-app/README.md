@@ -58,3 +58,9 @@ Las 64 palabras y frases de A1 tienen una ficha de contexto: cuándo se usa, có
 - **Conjugador:** eliges quién, verbo (44 verbos comunes), tiempo y tipo, y ves la oración armada por piezas, la forma contraída y la respuesta corta.
 - **Moldes:** 18 estructuras para enchufar tu vocabulario (I want to…, I'd like to…, because, so, to + verbo…).
 - **Con Kate:** escribes en español y el profesor IA lo arma en inglés de EE. UU., pieza por pieza, con el porqué.
+
+## 📚 Aprender (menú único de estudio)
+- **📖 Verbos:** 136 verbos importantes por categorías, con sus 5 formas (base, -s, -ing, pasado, participio), si es regular o irregular, y ejemplos generados en 12 usos (presente, negativo, pregunta, continuo, pasado, futuro, presente perfecto, can). Buscador en inglés o español.
+- **🗂 Vocabulario por temas:** 17 temas, 255 palabras con ejemplo y audio, práctica de 8 preguntas y botón para pasar todo a tarjetas.
+- **Verbos tocables:** en conversaciones, escenas, fichas de contexto y ejemplos, los verbos aparecen subrayados; al tocarlos se explica qué forma es y por qué va así en esa frase (después de am/is/are → -ing, después de to/can/did → base, he/she → +s, pasado, participio…).
+- La barra inferior quedó en 6 opciones: Hoy, Clase, Aprender, Tarjetas, Hablar, Progreso. Las tareas pendientes aparecen en Hoy.
