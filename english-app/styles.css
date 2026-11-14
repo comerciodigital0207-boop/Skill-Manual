@@ -428,3 +428,10 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .vex:last-of-type { border-bottom: 0; }
 .tq { background: var(--primary-soft); border-radius: 12px; padding: 10px; margin: 10px 0; }
 .hw-chip { width: 100%; margin-bottom: 6px; background: var(--mid-soft); border-color: transparent; }
+.gbtn { flex-direction: column; gap: 2px; line-height: 1.2; padding: 10px 6px; }
+.gbtn small { font-weight: 500; font-size: .75rem; opacity: .85; }
+.srs-help summary { cursor: pointer; }
+.srs-help ol { padding-left: 1.2rem; margin: 8px 0; }
+.srs-legend { display: grid; gap: 6px; }
+.srs-legend > div { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.t-bad { color: var(--bad); } .t-mid { color: var(--mid); } .t-good { color: var(--good); }

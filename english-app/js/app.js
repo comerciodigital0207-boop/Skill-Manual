@@ -218,12 +218,21 @@
   }
   const overdueCards = () => Object.values(S.cards).filter((c) => c.due < today()).length;
   const dueCards = () => Object.values(S.cards).filter((c) => c.due <= today()).sort((a, b) => (a.seen || 0) - (b.seen || 0));
+  // Cuántos días tarda en volver la tarjeta con cada botón (sin cambiarla)
+  // Nueva caja según el botón: Otra vez → 0 (hoy) · Difícil → no avanza (mín. 1 día) · Bien → +1 (mín. 3 días) · Fácil → +2 (mín. 7 días)
+  function nextBox(card, q) {
+    const top = SRS_DAYS.length - 1;
+    if (q === 0) return 0;
+    if (q === 1) return Math.max(1, card.box);
+    if (q === 2) return Math.min(top, Math.max(2, card.box + 1));
+    return Math.min(top, Math.max(3, card.box + 2));
+  }
+  function nextGap(card, q) { return q === 0 ? 0 : SRS_DAYS[nextBox(card, q)] || 1; }
+  const gapLabel = (d) => (d === 0 ? "vuelve hoy" : d === 1 ? "vuelve mañana" : d < 30 ? `vuelve en ${d} días` : d < 60 ? "vuelve en 1 mes" : `vuelve en ${Math.round(d / 30)} meses`);
   function gradeCard(card, quality) {
     // quality: 0 otra vez, 1 difícil, 2 bien, 3 fácil
-    if (quality === 0) card.box = 0;
-    else if (quality === 1) card.box = Math.max(1, card.box);
-    else card.box = Math.min(SRS_DAYS.length - 1, card.box + (quality === 3 ? 2 : 1));
-    card.due = addDays(today(), quality === 0 ? 0 : SRS_DAYS[card.box] || 1);
+    card.due = addDays(today(), nextGap(card, quality));
+    card.box = nextBox(card, quality);
     card.seen = Date.now(); // las falladas vuelven al final de la fila, no de inmediato
     record(card.unitId, "vocab", quality >= 2);
     dayLog().reviews++;
@@ -1121,15 +1130,20 @@
     }
     const card = due[0];
     const showBack = ctx.flip;
-    return `<section class="card"><div class="muted">${due.length} pendientes · repetición espaciada</div>
+    const help = `<details class="card srs-help" ${Object.values(S.log).reduce((n, l) => n + (l.reviews || 0), 0) < 15 ? "open" : ""}><summary><b>❓ ¿Cómo funcionan las tarjetas?</b></summary>
+      <ol><li>Lee la frase en <b>español</b>.</li><li><b>Dila en inglés en voz alta</b>, sin mirar.</li><li><b>Toca la tarjeta</b> para ver la respuesta y escúchala.</li><li>Dile a la app <b>qué tan bien la recordaste</b> (sé honesta):</li></ol>
+      <div class="srs-legend"><div><b class="t-bad">Otra vez</b> No la recordé o me equivoqué → vuelve hoy mismo.</div><div><b class="t-mid">Difícil</b> La recordé, pero me costó → vuelve pronto.</div>
+      <div><b class="t-good">Bien</b> La recordé bien → vuelve en unos días.</div><div><b>Fácil</b> La sabía sin pensar → vuelve mucho después.</div></div>
+      <p class="muted">Así repasas cada frase justo antes de olvidarla. Cada vez que aciertas, la espera crece (1, 3, 7, 14, 30 días…) hasta que la tarjeta queda <b>dominada</b>.</p></details>`;
+    return help + `<section class="card"><div class="muted">${due.length} pendientes · repetición espaciada</div>
       <div class="flash" data-action="flip">
         <div class="front">${esc(card.es)}${card.mistake ? ' <span class="pill bad">tu error</span>' : ""}</div>
         ${showBack ? `<div class="back"><b>${esc(card.en)}</b>${card.ex ? `<div class="ex">${esc(card.ex)}</div>` : ""}</div>` : '<div class="muted">Di la respuesta en voz alta en inglés y toca para ver…</div>'}
         ${showBack ? (() => { const cx = vocabContext(card.unitId, card.en); return cx ? `<div class="card-when">📍 ${esc(cx.when)}<br>🧩 ${cx.build}<br>⚠️ ${esc(cx.watch)}</div>` : ""; })() : ""}
       </div>
       ${showBack ? `<div class="row center"><button class="icon" data-action="say" data-text="${esc(card.en + (card.ex ? ". " + card.ex : ""))}">🔊</button></div>
-      <div class="grade"><button class="btn bad" data-action="grade" data-q="0">Otra vez</button><button class="btn mid" data-action="grade" data-q="1">Difícil</button>
-      <button class="btn good" data-action="grade" data-q="2">Bien</button><button class="btn" data-action="grade" data-q="3">Fácil</button></div>` : ""}
+      <p class="muted center">¿Qué tan bien la recordaste?</p>
+      <div class="grade">${[["bad", 0, "Otra vez", "No la recordé"], ["mid", 1, "Difícil", "Me costó"], ["good", 2, "Bien", "La recordé"], ["", 3, "Fácil", "Sin pensar"]].map(([c, q, n, d]) => `<button class="btn gbtn ${c}" data-action="grade" data-q="${q}"><b>${n}</b><small>${d} · ${gapLabel(nextGap(card, q))}</small></button>`).join("")}</div>` : `<p class="muted center">Primero di la respuesta en voz alta y luego toca la tarjeta.</p>`}
     </section>` + mistakesBlock();
   }
   function mistakesBlock() {
