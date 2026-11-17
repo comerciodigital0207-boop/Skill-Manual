@@ -125,17 +125,28 @@
 
   // ───────────────────────── Voz (TTS + reconocimiento) ─────────────────────────
   let voices = [];
-  function loadVoices() { voices = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^en[-_]/i.test(v.lang)); }
+  // Prefiere voces naturales de EE. UU. (las “mejoradas/premium” del iPhone, las “Natural/Online” de Windows, Google US)
+  function voiceScore(v) {
+    const n = v.name.toLowerCase(); let sc = 0;
+    if (/en[-_]us/i.test(v.lang)) sc += 50; else if (/en[-_](ca)/i.test(v.lang)) sc += 20;
+    if (/premium|enhanced|mejorada|natural|neural|online/.test(n)) sc += 40;
+    if (/\b(ava|samantha|allison|susan|zoe|evan|nathan|joelle|noelle|aria|jenny|michelle|guy|google us english)\b/.test(n)) sc += 25;
+    if (/compact|eloquence|novelty|bad news|bells|bubbles|cellos|good news|jester|organ|superstar|trinoids|whisper|wobble|zarvox|albert|bahh|boing|fred|junior|ralph|kathy|grandma|grandpa|rocko|shelley|flo|eddy|reed|sandy/.test(n)) sc -= 80;
+    return sc;
+  }
+  function loadVoices() { voices = (window.speechSynthesis ? speechSynthesis.getVoices() : []).filter((v) => /^en[-_]/i.test(v.lang)).sort((a, b) => voiceScore(b) - voiceScore(a)); }
   if (window.speechSynthesis) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
   function pickVoice(i) {
-    const us = voices.filter((x) => /en[-_]US/i.test(x.lang));
-    const pool = us.length ? us : voices;
-    if (!i) return pool.find((x) => x.name === S.settings.voice) || pool[0];
-    return pool[i % pool.length] || pool[0];
+    const good = voices.filter((x) => voiceScore(x) > 0);
+    const pool = good.length ? good : voices;
+    const main = pool.find((x) => x.name === S.settings.voice) || pool[0];
+    if (!i) return main;
+    const others = pool.filter((x) => x !== main);
+    return others.length ? others[(i - 1) % others.length] : main;
   }
   // Lee varias líneas seguidas; cada personaje con una voz distinta cuando es posible
   function speakLines(lines, onLine) {
-    const tts = window.APP_TTS;
+    const tts = S.settings.voiceSrc !== "device" ? window.APP_TTS : null;
     if (tts) {
       const names = ["buttery", "airy", "glassy", "rounded"];
       tts.speak(lines.map((l, i) => ({ text: l.text, voice: names[l.voice % names.length], rate: S.settings.rate, language: "en", id: String(i) }))).catch(() => {});
@@ -152,12 +163,12 @@
     });
   }
   function speak(text, rate) {
-    if (window.APP_TTS) { window.APP_TTS.speak(text, { rate: rate || S.settings.rate, language: "en" }).catch(() => {}); return; }
+    if (window.APP_TTS && S.settings.voiceSrc !== "device") { window.APP_TTS.speak(text, { rate: rate || S.settings.rate, language: "en", voice: S.settings.claudeVoice || "buttery" }).catch(() => {}); return; }
     if (!window.speechSynthesis) { toast("Tu navegador no soporta lectura en voz alta"); return; }
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "en-US"; u.rate = rate || S.settings.rate;
-    const v = voices.find((x) => x.name === S.settings.voice) || voices.find((x) => /en-US/i.test(x.lang)) || voices[0];
+    const v = pickVoice(0);
     if (v) u.voice = v;
     speechSynthesis.speak(u);
   }
@@ -166,7 +177,8 @@
     if (!window.speechSynthesis) return;
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text); u.lang = "es-ES"; u.rate = 1;
-    const v = speechSynthesis.getVoices().find((x) => /^es[-_]/i.test(x.lang)); if (v) u.voice = v;
+    const es = speechSynthesis.getVoices().filter((x) => /^es[-_]/i.test(x.lang)).sort((x, y) => (/(premium|enhanced|mejorada|natural|online)/i.test(y.name) ? 2 : 0) + (/es[-_](us|mx|co)/i.test(y.lang) ? 1 : 0) - ((/(premium|enhanced|mejorada|natural|online)/i.test(x.name) ? 2 : 0) + (/es[-_](us|mx|co)/i.test(x.lang) ? 1 : 0)));
+    if (es[0]) u.voice = es[0];
     speechSynthesis.speak(u);
   }
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -234,6 +246,7 @@
     card.due = addDays(today(), nextGap(card, quality));
     card.box = nextBox(card, quality);
     card.seen = Date.now(); // las falladas vuelven al final de la fila, no de inmediato
+    card.reps = (card.reps || 0) + 1;
     record(card.unitId, "vocab", quality >= 2);
     dayLog().reviews++;
   }
@@ -1010,10 +1023,11 @@
 
       <div class="sstep"><span class="snum">3</span><div class="sbody"><b>Responde en voz alta</b> <span class="muted">(mínimo ${need} palabras)</span>
         ${writing ? `
-          <div class="notice">${mic === "no" ? `<b>🎙 El micrófono no funciona en este dispositivo</b> (o no diste permiso). No pasa nada, hazlo así:` : `<b>✍️ Modo escribir:</b>`}
-            <ol><li><b>Di tu respuesta en voz alta</b>, aunque nadie te escuche. Hablar es la práctica más importante.</li>
-            <li><b>Escríbela aquí abajo</b>, igual a como la dijiste, para revisarla.</li></ol>
-            <p class="muted">💡 Truco: en el celular, toca el 🎤 de tu teclado y dicta en inglés. Así escribe por ti.</p></div>
+          <div class="notice">${mic === "no" ? `<b>🎙 Usa el micrófono de tu teclado</b><br><span class="muted">Dentro de la app de Claude en el celular, esta página no puede encender el micrófono por sí sola (es una regla de seguridad de la app, no un problema de tu teléfono). Pero el micrófono de tu teclado sí funciona:</span>` : `<b>✍️ Modo escribir:</b>`}
+            <ol><li>Toca el cuadro de abajo para que se abra el teclado.</li>
+            <li>Toca el <b>🎤 del teclado</b> (abajo a la derecha en iPhone) y <b>habla en inglés</b>: lo que digas se escribe solo.</li>
+            <li>Toca <b>“Listo, revisar mi respuesta”</b>.</li></ol>
+            <p class="muted">Si el teclado escribe en español, cambia el idioma del teclado a inglés con el 🌐 (globo).</p></div>
           <form data-form="typedSpeak" data-id="${id}"><textarea name="t" rows="5" placeholder="Write your answer in English here…">${esc(st.text)}</textarea>
             <button class="btn primary">Listo, revisar mi respuesta</button></form>
           ${mic !== "no" ? `<button class="link" data-action="writeMode" data-id="${id}" data-on="0">🎙 Mejor usar el micrófono</button>` : ""}`
@@ -1130,20 +1144,35 @@
     }
     const card = due[0];
     const showBack = ctx.flip;
+    const isVerb = card.unitId === "verb";
+    const a = isVerb ? null : analyzeSentence(card.en);
+    const cx = vocabContext(card.unitId, card.en);
+    const tom = addDays(today(), 1), wk = addDays(today(), 7);
+    const all = Object.values(S.cards);
+    const sched = { tomorrow: all.filter((c) => c.due === tom).length, week: all.filter((c) => c.due > today() && c.due <= wk).length, mastered: all.filter((c) => c.box >= 4).length };
+    const typed = ctx.revTyped && ctx.revTyped.id === card.id ? ctx.revTyped : null;
+    const origin = { conv: "💬 De tus conversaciones con " + TEACHER, real: "🇺🇸 De una escena de vida real", verb: "📖 Verbo", topic: "🗂 Vocabulario por temas", custom: "✍️ Tus palabras" }[card.unitId] || (C[unitIndex(card.unitId)] ? "📘 Clase: " + C[unitIndex(card.unitId)].title : "");
     const help = `<details class="card srs-help" ${Object.values(S.log).reduce((n, l) => n + (l.reviews || 0), 0) < 15 ? "open" : ""}><summary><b>❓ ¿Cómo funcionan las tarjetas?</b></summary>
-      <ol><li>Lee la frase en <b>español</b>.</li><li><b>Dila en inglés en voz alta</b>, sin mirar.</li><li><b>Toca la tarjeta</b> para ver la respuesta y escúchala.</li><li>Dile a la app <b>qué tan bien la recordaste</b> (sé honesta):</li></ol>
-      <div class="srs-legend"><div><b class="t-bad">Otra vez</b> No la recordé o me equivoqué → vuelve hoy mismo.</div><div><b class="t-mid">Difícil</b> La recordé, pero me costó → vuelve pronto.</div>
+      <ol><li>Lee la frase en <b>español</b> y mira qué tipo de frase es (pregunta, afirmación…).</li><li><b>Dila en inglés en voz alta</b>, sin mirar. Si quieres, escríbela o díctala con el 🎤 de tu teclado y la app la compara.</li><li><b>Toca la tarjeta</b>: verás la respuesta, qué significa, cómo decirla y qué tener en cuenta.</li><li>Dile a la app <b>qué tan bien la recordaste</b> (sé honesta):</li></ol>
+      <div class="srs-legend"><div><b class="t-bad">Otra vez</b> No la recordé o me equivoqué → vuelve hoy mismo.</div><div><b class="t-mid">Difícil</b> La recordé, pero me costó → vuelve mañana.</div>
       <div><b class="t-good">Bien</b> La recordé bien → vuelve en unos días.</div><div><b>Fácil</b> La sabía sin pensar → vuelve mucho después.</div></div>
       <p class="muted">Así repasas cada frase justo antes de olvidarla. Cada vez que aciertas, la espera crece (1, 3, 7, 14, 30 días…) hasta que la tarjeta queda <b>dominada</b>.</p></details>`;
-    return help + `<section class="card"><div class="muted">${due.length} pendientes · repetición espaciada</div>
+    return `<section class="card sched"><div><b>${due.length}</b><span>para hoy</span></div><div><b>${sched.tomorrow}</b><span>mañana</span></div><div><b>${sched.week}</b><span>próximos 7 días</span></div><div><b>${sched.mastered}</b><span>dominadas</span></div></section>`
+      + help + `<section class="card"><div class="row between"><span class="muted">Tarjeta 1 de ${due.length}</span><span class="muted small">${esc(origin)}</span></div>
       <div class="flash" data-action="flip">
+        <div class="muted">${isVerb ? "Di el verbo en inglés con sus formas (base · pasado · participio)" : `Dilo en inglés · ${a.icon} ${esc(a.kind.split(" (")[0])}`}</div>
         <div class="front">${esc(card.es)}${card.mistake ? ' <span class="pill bad">tu error</span>' : ""}</div>
-        ${showBack ? `<div class="back"><b>${esc(card.en)}</b>${card.ex ? `<div class="ex">${esc(card.ex)}</div>` : ""}</div>` : '<div class="muted">Di la respuesta en voz alta en inglés y toca para ver…</div>'}
-        ${showBack ? (() => { const cx = vocabContext(card.unitId, card.en); return cx ? `<div class="card-when">📍 ${esc(cx.when)}<br>🧩 ${cx.build}<br>⚠️ ${esc(cx.watch)}</div>` : ""; })() : ""}
+        ${showBack ? `<div class="back"><b>${isVerb ? esc(card.en) : annotate(card.en)}</b>${card.ex ? `<div class="ex">${annotate(card.ex)}</div>` : ""}</div>` : '<div class="muted">Toca aquí para ver la respuesta</div>'}
       </div>
-      ${showBack ? `<div class="row center"><button class="icon" data-action="say" data-text="${esc(card.en + (card.ex ? ". " + card.ex : ""))}">🔊</button></div>
+      ${showBack ? "" : `<form data-form="revCheck" class="row rev-check"><input name="t" placeholder="Escríbela o díctala con el 🎤 del teclado" autocomplete="off" autocapitalize="off"><button class="btn small">Comprobar</button></form>`}
+      ${showBack ? `<div class="row center"><button class="btn small" data-action="say" data-text="${esc(card.en.split(" / ")[0])}">🔊 Escuchar</button><button class="btn small" data-action="saySlow" data-text="${esc(card.en.split(" / ")[0])}">🐢 Lento</button></div>
+        ${typed ? `<div class="typed-res ${typed.score >= 85 ? "ok" : typed.score >= 60 ? "mid" : "no"}">Tu respuesta: “${esc(typed.text)}” → <b>${typed.score}% igual</b> ${typed.score >= 85 ? "✅ ¡Muy bien!" : typed.score >= 60 ? "Casi: revisa las palabras que cambian." : "Compárala con la respuesta y repítela en voz alta."}</div>` : ""}
+        <div class="meaning">🇪🇸 <b>Significa:</b> ${esc(card.es)}${cx ? `<br>📍 <b>Cuándo se usa:</b> ${esc(cx.when)}` : ""}</div>
+        ${isVerb ? `<div class="an"><div class="an-row"><span>📖</span><div>Las formas del verbo: <b>${esc(card.en)}</b>. ${esc(card.ex || "")}<br><button class="link small" data-action="openVerb" data-v="${esc(card.en.split(" · ")[0])}">Ver ejemplos en todos los tiempos</button></div></div></div>` : analysisHTML(a, card)}
+        ${cx ? `<div class="an"><div class="an-row tip"><span>🧩</span><div><b>Arma tu frase:</b> ${cx.build}<br>⚠️ ${esc(cx.watch)}</div></div></div>` : ""}
       <p class="muted center">¿Qué tan bien la recordaste?</p>
-      <div class="grade">${[["bad", 0, "Otra vez", "No la recordé"], ["mid", 1, "Difícil", "Me costó"], ["good", 2, "Bien", "La recordé"], ["", 3, "Fácil", "Sin pensar"]].map(([c, q, n, d]) => `<button class="btn gbtn ${c}" data-action="grade" data-q="${q}"><b>${n}</b><small>${d} · ${gapLabel(nextGap(card, q))}</small></button>`).join("")}</div>` : `<p class="muted center">Primero di la respuesta en voz alta y luego toca la tarjeta.</p>`}
+      <div class="grade">${[["bad", 0, "Otra vez", "No la recordé"], ["mid", 1, "Difícil", "Me costó"], ["good", 2, "Bien", "La recordé"], ["", 3, "Fácil", "Sin pensar"]].map(([c, q, n, d]) => `<button class="btn gbtn ${c}" data-action="grade" data-q="${q}"><b>${n}</b><small>${d} · ${gapLabel(nextGap(card, q))}</small></button>`).join("")}</div>
+      <p class="muted center small">Has repasado esta tarjeta ${card.reps || 0} ${card.reps === 1 ? "vez" : "veces"}.</p>` : `<p class="muted center">Primero di la respuesta en voz alta. Luego toca la tarjeta.</p>`}
     </section>` + mistakesBlock();
   }
   function mistakesBlock() {
@@ -1397,7 +1426,7 @@ SCORE: ${score}/10`;
         <div class="chips-col">${lastK.options.map(([en, es]) => `<button class="sugg" data-action="useSugg" data-text="${esc(en)}"><b>${esc(en)}</b><span>${esc(es)}</span></button>`).join("")}</div></div>` : ""}
       ${chat.ended ? "" : `<form data-form="chat" class="row chat-form"><input name="m" id="chatInput" placeholder="Escribe en inglés (o en español si no sabes cómo decirlo)" autocomplete="off">
         ${micMode() === "yes" ? `<button type="button" class="btn small" data-action="chatMic">${ctx.recording === "chat" ? "⏹" : "🎙"}</button>` : ""}<button class="btn small primary">Enviar</button></form>
-      <p class="muted">💬 ¿No sabes cómo decir algo? <b>Escríbelo en español</b> y ${TEACHER} te enseña cómo se dice en inglés.${micMode() === "no" ? " (El micrófono no funciona aquí: dicta con el 🎤 del teclado del celular.)" : ""}</p>
+      <p class="muted">💬 ¿No sabes cómo decir algo? <b>Escríbelo en español</b> y ${TEACHER} te enseña cómo se dice en inglés.${micMode() === "no" ? " 🎙 Para hablar, toca el cuadro y usa el <b>🎤 de tu teclado</b>: lo que digas se escribe solo." : ""}</p>
       ${lifelines}
       <button class="btn small" data-action="endChat">🏁 Terminar la conversación</button>`}
     </section>`;
@@ -1599,6 +1628,78 @@ SCORE: ${score}/10`;
   }
 
   window.EC_DEBUG = { explainVerb: (...a) => explainVerb(...a), annotate: (t) => annotate(t) };
+
+  // ───────────────────────── Análisis de una frase para el repaso ─────────────────────────
+  const AUX_Q = new Set(["do", "does", "did", "are", "is", "am", "was", "were", "can", "could", "will", "would", "should", "have", "has", "may"]);
+  const WH = new Set(["what", "where", "when", "why", "how", "who", "which", "whose"]);
+  const SOUNDS = [
+    [/\bgoing to\b/i, "going to", "suena <b>gonna</b>"], [/\bwant to\b/i, "want to", "suena <b>wanna</b>"], [/\bgot to\b|\bhave got to\b/i, "got to", "suena <b>gotta</b>"],
+    [/\bcan i\b/i, "Can I", "se une: <b>kenai</b>"], [/\bdo you\b/i, "do you", "se une: <b>duyu</b> o <b>dya</b>"], [/\bdid you\b/i, "did you", "se une: <b>díyu</b>"],
+    [/\bwhat are you\b/i, "what are you", "suena <b>uáchu</b>"], [/\bget you\b/i, "get you", "suena <b>guéchu</b>"], [/\bnice to meet you\b/i, "nice to meet you", "todo pegado: <b>naistumíchu</b>"],
+    [/\bi'm\b/i, "I'm", "<b>aim</b>"], [/\bdon't\b/i, "don't", "<b>dount</b> (la t casi no suena)"], [/\bcan't\b/i, "can't", "<b>kent</b>, fuerte (can sin negación suena débil: <i>kn</i>)"],
+    [/\bit's\b/i, "it's", "<b>its</b>"], [/\bwhat's\b/i, "what's", "<b>uáts</b>"], [/\bthat's\b/i, "that's", "<b>dats</b>"], [/\bi'll\b/i, "I'll", "<b>ail</b>"], [/\blet's\b/i, "let's", "<b>lets</b>"],
+    [/\bi'd\b/i, "I'd", "<b>aid</b>"], [/\bdoesn't\b/i, "doesn't", "<b>dásent</b>"], [/\bdidn't\b/i, "didn't", "<b>dídent</b>"], [/\bthe\b/i, "the", "<b>da</b> con la lengua entre los dientes (th suave)"]
+  ];
+  function analyzeSentence(raw) {
+    const en = String(raw || "").split(" / ")[0].replace(/\s*\(.*?\)\s*/g, " ").trim();
+    const ws = en.split(/\s+/).map(clean).filter(Boolean);
+    const first = ws[0] || "";
+    const lex = lexicon();
+    const hasQ = /\?\s*$/.test(en) || (AUX_Q.has(first) && ws.length > 2 && !/[.!]$/.test(en)) || (WH.has(first) && ws.length > 1 && !/[.!]$/.test(en));
+    const neg = /n't\b|\bnot\b|\bnever\b|\bcannot\b/i.test(en);
+    const verbsFound = []; ws.forEach((w, i) => {
+      const pv = ws[i - 1] || "";
+      if (!lex[w] || DETERMINERS.has(pv) || w === "thanks" || w === "please") return;
+      if (w === "left" && /^(turn|on|to|keep|go|the|your|my|stay|make|take)$/.test(pv)) return;
+      verbsFound.push([w, i]);
+    });
+    const fv = verbsFound.length ? verbsFound[0][1] : ws.length;
+    const hasSubj = ws.slice(0, fv).some((w) => SUBJ_PLAIN.has(w) || SUBJ_3.has(w) || /^(a|an|the|my|your|his|her|our|their|these|those|some|every)$/.test(w) || /^(there|this|that|people|everyone|someone|nobody|everything|what|who)$/.test(w)) || /'(m|s|re|ll|d|ve)$/.test(ws[0] || "") || (fv === 1 && /^[A-Z][a-z]+$/.test(en.split(/\s+/)[0] || "") && !lex[first]);
+    const firstIsVerb = lex[first] && lex[first].some((x) => x.type === "base" || x.type === "same") && !AUX_Q.has(first) && first !== "be";
+    let kind, icon;
+    if (hasQ) { kind = WH.has(first) ? "Pregunta con palabra de pregunta (" + first + ")" : "Pregunta de sí / no"; icon = "❓"; }
+    else if (first === "let's" || first === "please" || firstIsVerb) { kind = "Orden, petición o sugerencia"; icon = "👉"; }
+    else if ((!verbsFound.length && !/'(m|s|re|ll|d|ve)\b/.test(en)) || (!hasSubj && ws.length <= 6)) { kind = "Expresión fija (frase corta)"; icon = "💬"; }
+    else if (neg) { kind = "Afirmación en negativo"; icon = "❌"; }
+    else { kind = "Afirmación"; icon = "✅"; }
+    // Tiempo verbal
+    const low = " " + ws.join(" ") + " ";
+    let tense = "";
+    if (icon === "👉") tense = "Imperativo: verbo en forma base y sin sujeto";
+    else if (icon === "💬") tense = "";
+    else if (/ (will|won't|i'll|you'll|we'll|they'll|he'll|she'll|it'll) /.test(low)) tense = "Futuro con will (decisión, promesa u ofrecimiento)";
+    else if (/ going to /.test(low) && !/ going to (the|my|work|school|bed|a) /.test(low)) tense = "Futuro con going to (un plan)";
+    else if (/ (have|has|i've|you've|we've|they've|haven't|hasn't) /.test(low) && verbsFound.some(([w]) => (lex[w] || []).some((x) => x.type === "pp" || x.type === "pastpp"))) tense = "Presente perfecto (he / ha …ado)";
+    else if (verbsFound.some(([w], k) => (lex[w] || []).some((x) => x.type === "ing")) && /( am | is | are | i'm | you're | we're | they're | he's | she's | it's | was | were )/.test(low)) tense = / (was|were) /.test(low) ? "Pasado continuo (estaba …ando)" : "Presente continuo (está pasando ahora)";
+    else if (/ (did|didn't|was|were|wasn't|weren't) /.test(low) || verbsFound.some(([w]) => (lex[w] || []).every((x) => x.type === "past" || x.type === "pastpp"))) tense = "Pasado simple (acción terminada)";
+    else if (/ (can|can't|could|couldn't) /.test(low)) tense = "Can / could (poder, pedir algo)";
+    else if (/ (would|i'd|you'd) /.test(low)) tense = "Would (amable: me gustaría, podría)";
+    else if (verbsFound.length || /'(m|s|re)\b/.test(en)) tense = "Presente simple";
+    // Entonación
+    const tone = hasQ && !WH.has(first) ? "↗ <b>Sube la voz al final</b>: es una pregunta de sí o no." : hasQ ? "↘ <b>Baja la voz al final</b>: las preguntas con What, Where, How… bajan al final." : icon === "👉" ? "↘ Tono amable y firme. Si es una petición, añade <b>please</b>." : "↘ <b>Baja la voz al final</b>, como una afirmación tranquila.";
+    // Ten en cuenta
+    const tips = [];
+    if (hasQ && /^(do|does|did)$/.test(first)) tips.push(`En la pregunta, el ayudante <b>${first}</b> va primero y el verbo queda en forma base.`);
+    else if (hasQ && /^(are|is|am|was|were)$/.test(first)) tips.push("Con <b>be</b>, para preguntar el verbo pasa delante del sujeto: <i>You are → Are you…?</i>");
+    else if (hasQ && /^(can|could|will|would|should)$/.test(first)) tips.push(`<b>${first}</b> va primero y el verbo va en forma base, sin “to”.`);
+    else if (hasQ && WH.has(first)) tips.push(`<b>${first}</b> va primero, luego el ayudante (do / does / did / is / are / can) y después el sujeto.`);
+    if (neg) tips.push("Negativo: <b>don't / doesn't / didn't + verbo base</b>, o <b>be + not</b> (isn't, aren't).");
+    if (icon === "👉") tips.push("No lleva sujeto: es una orden, petición o sugerencia. Con <b>please</b> suena amable.");
+    if (icon === "💬") tips.push("Es una frase fija: apréndela completa, como un bloque, sin traducir palabra por palabra.");
+    if (verbsFound.some(([w]) => (lex[w] || []).some((x) => x.type === "s3")) && !hasQ) tips.push("El verbo lleva <b>-s</b> porque el sujeto es he / she / it (o una persona).");
+    if (/ (want|need|like|love|have|going|try|decide|plan|hope) to /.test(low)) tips.push("Dos verbos seguidos se unen con <b>to</b>: <i>want to go, need to rest</i>.");
+    if (/ (can|will|should|could|would|must|let's) /.test(low)) tips.push("Después de can / will / should / let's, el verbo va solo (sin “to”).");
+    const sounds = SOUNDS.filter(([re]) => re.test(en)).slice(0, 4).map(([, a, b]) => `<b>${esc(a)}</b> → ${b}`);
+    return { en, kind, icon, tense, tone, tips, sounds };
+  }
+  function analysisHTML(a, card) {
+    return `<div class="an">
+      <div class="an-row"><span>${a.icon}</span><div><b>Tipo de frase:</b> ${esc(a.kind)}${a.tense ? `<br><b>Tiempo:</b> ${esc(a.tense)}` : ""}</div></div>
+      <div class="an-row"><span>🎵</span><div><b>Cómo decirla:</b> ${a.tone}${a.sounds.length ? `<br>${a.sounds.join(" · ")}` : ""}</div></div>
+      ${a.tips.length ? `<div class="an-row tip"><span>⚠️</span><div><b>Ten en cuenta:</b><ul>${a.tips.map((t) => `<li>${t}</li>`).join("")}</ul></div></div>` : ""}
+    </div>`;
+  }
+
   function viewGuide() {
     const tab = ctx.gtab || "hub";
     const HUB = [["verbs", "📖", "Verbos", "Más de 130 verbos importantes: sus 5 formas y ejemplos"], ["vocab", "🗂", "Vocabulario por temas", "255 palabras: casa, comida, trabajo, salud, ciudad…"], ["build", "🧱", "Armar oraciones", "El orden de las piezas y ejemplos resueltos"], ["tenses", "⏱", "Tiempos verbales", "Presente, pasado, futuro: afirmativo, negativo y pregunta"], ["conj", "🔧", "Conjugador", "Arma cualquier oración y mira cómo cambia"], ["patterns", "🧩", "Moldes de frases", "I want to…, I'd like to…, because, so…"], ["kate", "🤖", "Arma tu frase con " + TEACHER, "Escribe en español y te lo arma en inglés"]];
@@ -1798,7 +1899,14 @@ SCORE: ${score}/10`;
         <button type="button" class="btn" data-action="ics">📅 Descargar alarmas (.ics)</button>
         <h2>🔊 Voz</h2>
         <label>Velocidad de lectura<input type="range" name="rate" min="0.6" max="1.2" step="0.05" value="${s.rate}"></label>
-        <label>Voz<select name="voice"><option value="">Automática</option>${voices.map((v) => `<option ${v.name === s.voice ? "selected" : ""}>${esc(v.name)}</option>`).join("")}</select></label>
+        ${window.APP_TTS ? `<label>Voces<select name="voiceSrc"><option value="claude" ${s.voiceSrc !== "device" ? "selected" : ""}>Voces de Claude (más naturales)</option><option value="device" ${s.voiceSrc === "device" ? "selected" : ""}>Voces de este dispositivo</option></select></label>
+        <label>Voz de Claude<select name="claudeVoice">${[["buttery", "Buttery (cálida)"], ["airy", "Airy (suave)"], ["glassy", "Glassy (clara)"], ["rounded", "Rounded (redonda)"]].map(([k, n]) => `<option value="${k}" ${(s.claudeVoice || "buttery") === k ? "selected" : ""}>${n}</option>`).join("")}</select></label>` : ""}
+        <label>Voz del dispositivo<select name="voice"><option value="">Automática (la más natural disponible)</option>${voices.map((v, i) => `<option value="${esc(v.name)}" ${v.name === s.voice ? "selected" : ""}>${voiceScore(v) >= 90 ? "⭐ " : ""}${esc(v.name)} (${esc(v.lang)})</option>`).join("")}</select></label>
+        <button type="button" class="btn small" data-action="testVoice">▶ Probar la voz</button>
+        <details class="voice-tip"><summary>📲 ¿Suena robótica? Descarga una voz mejor (gratis)</summary>
+          <p><b>iPhone:</b> Ajustes → Accesibilidad → Contenido leído → Voces → Inglés → elige <b>Ava</b> o <b>Samantha</b> y descarga la versión <b>“Mejorada”</b> o <b>“Premium”</b>. Después vuelve aquí, elígela en “Voz del dispositivo” (aparece con ⭐) y toca “Guardar ajustes”.</p>
+          <p><b>Android:</b> Ajustes → Accesibilidad → Salida de texto a voz → Motor de Google → Instalar datos de voz → Inglés (Estados Unidos) → descarga una voz de alta calidad.</p>
+          <p class="muted">Dentro de la app de Claude es posible que solo aparezcan algunas voces del teléfono.</p></details>
         <h2>🤖 Profesor IA (opcional)</h2>
         ${window.ARTIFACT_MODE ? `<p class="muted">${window.AI.enabled() ? "✅ Activo: el profesor usa tu cuenta de Claude. La primera vez te pedirá permiso." : "No disponible en esta vista. Ábrela con tu cuenta de Claude iniciada."}</p>` : `
         <p class="muted">Con una API key de Claude (console.anthropic.com) obtienes: corrección detallada de tareas, feedback de speaking y conversación por voz. Se guarda solo en este navegador. Tiene costo por uso según tu cuenta de Anthropic.</p>
@@ -1857,6 +1965,13 @@ SCORE: ${score}/10`;
         save(); rerenderKeepScroll(); break;
       }
       case "sayEs": speakEs(el.dataset.text); break;
+      case "testVoice": {
+        const f = el.closest("form"); const fd2 = new FormData(f);
+        const old = { voice: S.settings.voice, voiceSrc: S.settings.voiceSrc, claudeVoice: S.settings.claudeVoice, rate: S.settings.rate };
+        S.settings.voice = fd2.get("voice") || ""; if (fd2.has("voiceSrc")) S.settings.voiceSrc = fd2.get("voiceSrc"); if (fd2.has("claudeVoice")) S.settings.claudeVoice = fd2.get("claudeVoice"); S.settings.rate = parseFloat(fd2.get("rate")) || old.rate;
+        speak("Hi! How's it going? Can I get you anything today?");
+        Object.assign(S.settings, old); break;
+      }
       case "gtab": ctx.gtab = el.dataset.t === "hub" ? null : el.dataset.t; ctx.verb = null; ctx.topic = null; render(); window.scrollTo(0, 0); break;
       case "verbInfo": showVerbSheet({ w: el.dataset.w, p: el.dataset.p, p2: el.dataset.p2, n: el.dataset.n, first: el.dataset.first, past: el.dataset.past }); break;
       case "vsClose": $("#vsheet").hidden = true; break;
@@ -2306,6 +2421,11 @@ Responde EXACTAMENTE con este formato:
       } catch (err) { ctx.kb = { es }; toast(err.message); }
       rerenderKeepScroll(); return;
     }
+    if (kind === "revCheck") {
+      const card = dueCards()[0]; const t = (fd.get("t") || "").trim(); if (!card) return;
+      ctx.revTyped = { id: card.id, text: t, score: t ? similarity(card.en.split(" / ")[0], t) : 0 };
+      ctx.flip = true; if (t) dayLog().speakingWords += words(t).length; save(); rerenderKeepScroll(); return;
+    }
     if (kind === "goalDate") {
       S.settings.goalDate = fd.get("goalDate") || ""; save(); rerenderKeepScroll();
       toast(S.settings.goalDate ? "Fecha meta guardada" : "Fecha meta quitada"); return;
@@ -2327,6 +2447,8 @@ Responde EXACTAMENTE con este formato:
       const s = S.settings;
       s.studyTime = fd.get("studyTime"); s.reviewTime = fd.get("reviewTime");
       s.days = fd.getAll("day").map(Number); s.rate = parseFloat(fd.get("rate")); s.voice = fd.get("voice");
+      if (fd.has("voiceSrc")) s.voiceSrc = fd.get("voiceSrc");
+      if (fd.has("claudeVoice")) s.claudeVoice = fd.get("claudeVoice");
       if (fd.has("apiKey")) { s.apiKey = (fd.get("apiKey") || "").trim(); s.model = fd.get("model"); }
       S.profile.name = fd.get("name") || S.profile.name; S.profile.goal = fd.get("goal");
       const wantNotify = fd.get("notify") === "on";
