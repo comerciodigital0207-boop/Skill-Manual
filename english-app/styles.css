@@ -451,3 +451,23 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .an-row ul { margin: 4px 0 0; padding-left: 1.1rem; }
 .an-row.tip { background: var(--mid-soft); }
 .voice-tip { margin: 8px 0; } .voice-tip summary { cursor: pointer; font-weight: 600; color: var(--primary); }
+/* Kate te pregunta */
+.tabs.four { grid-template-columns: repeat(4, 1fr); }
+.tabs.four button { font-size: .78rem; padding: 10px 2px; }
+.kate-hero { background: linear-gradient(135deg, var(--primary-soft), var(--card)); }
+.avatar.big { font-size: 2.6rem; }
+.vpick { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; }
+.plan-steps { padding-left: 1.2rem; display: grid; gap: 4px; }
+.kq-dots { display: flex; gap: 4px; }
+.kq-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.kq-dots span.d { background: var(--good); } .kq-dots span.n { background: var(--primary); }
+.kq-q { display: grid; grid-template-columns: 48px 1fr; gap: 8px; align-items: center; font-size: 1.3rem; margin: 12px 0; }
+.kq-q > div { min-width: 0; }
+.icon.big { font-size: 1.8rem; background: var(--primary-soft); border-radius: 50%; width: 48px; height: 48px; }
+.kq-you { background: var(--primary-soft); border-radius: 12px; padding: 8px 12px; margin: 8px 0; }
+.kq-fb { border-radius: 12px; padding: 10px 12px; display: grid; gap: 6px; }
+.kq-fb.ok { background: var(--good-soft); } .kq-fb.mid { background: var(--mid-soft); }
+.kq-reply { font-style: italic; }
+.kq-better { background: var(--card); border-radius: 10px; padding: 8px 10px; }
+.kq-hint { background: var(--bg); border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
+#kqInput { min-height: 60px; }

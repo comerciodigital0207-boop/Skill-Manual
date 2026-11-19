@@ -64,3 +64,6 @@ Las 64 palabras y frases de A1 tienen una ficha de contexto: cuándo se usa, có
 - **🗂 Vocabulario por temas:** 17 temas, 255 palabras con ejemplo y audio, práctica de 8 preguntas y botón para pasar todo a tarjetas.
 - **Verbos tocables:** en conversaciones, escenas, fichas de contexto y ejemplos, los verbos aparecen subrayados; al tocarlos se explica qué forma es y por qué va así en esa frase (después de am/is/are → -ing, después de to/can/did → base, he/she → +s, pasado, participio…).
 - La barra inferior quedó en 6 opciones: Hoy, Clase, Aprender, Tarjetas, Hablar, Progreso. Las tareas pendientes aparecen en Hoy.
+
+## 🗣 Kate te pregunta (conversación por voz)
+En la pestaña Hablar, Kate hace preguntas en voz alta sobre tu vida (20 preguntas de A1–A2), tú respondes escribiendo o dictando, y ella te dice si quedó bien, cómo lo diría un nativo de EE. UU. y por qué. Con el profesor IA, Kate reacciona de forma natural y corrige tu respuesta exacta. Puedes elegir la voz de Kate (voces de Claude o del dispositivo). Las versiones correctas se guardan en tus tarjetas.

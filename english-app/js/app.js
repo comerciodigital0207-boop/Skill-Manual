@@ -1364,10 +1364,11 @@ SCORE: ${score}/10`;
     if (!ctx.freeUnit) ctx.freeUnit = done[Math.floor(Math.random() * done.length)].id;
     const fu = C[unitIndex(ctx.freeUnit)];
     const chat = (ctx.chat = ctx.chat || { si: 0, history: [] });
-    const stab = ctx.stab || "real";
+    const stab = ctx.stab || "kate";
     if (stab === "real" && ctx.sceneId) { const sc = SCENES().find((x) => x.id === ctx.sceneId); if (sc) return sceneView(sc); }
-    const tabs = `<div class="tabs three">${[["real", "🇺🇸 Vida real"], ["reto", "🎯 Reto"], ["chat", "💬 Conversar"]].map(([k, n]) => `<button class="${stab === k ? "on" : ""}" data-action="stab" data-t="${k}">${n}</button>`).join("")}</div>`;
+    const tabs = `<div class="tabs four">${[["kate", "🗣 Kate te pregunta"], ["real", "🇺🇸 Vida real"], ["reto", "🎯 Reto"], ["chat", "💬 Conversar"]].map(([k, n]) => `<button class="${stab === k ? "on" : ""}" data-action="stab" data-t="${k}">${n}</button>`).join("")}</div>`;
     const head = `<section class="card hero slim"><h1>🎤 Escucha y habla</h1><p class="muted">Practica como se habla en la vida real en EE. UU. 2 minutos hablando valen más que 20 leyendo.</p></section>` + tabs;
+    if (stab === "kate") return head + kateTalk();
     if (stab === "real") return head + sceneList();
     if (stab === "reto") return head + `
       <section class="card"><h2>🎯 Reto de speaking</h2>
@@ -1377,6 +1378,79 @@ SCORE: ${score}/10`;
     return head + `
       ${chatSection(chat)}`;
   }
+
+  // ───────────────────────── 🗣 Kate te pregunta: conversación por voz, pregunta a pregunta ─────────────────────────
+  const KQ = () => window.KATE_QUESTIONS || [];
+  const CLAUDE_VOICES = [["buttery", "Cálida"], ["airy", "Suave"], ["glassy", "Clara"], ["rounded", "Redonda"]];
+  function voicePicker() {
+    if (window.APP_TTS && S.settings.voiceSrc !== "device") {
+      return `<div class="vpick"><span class="muted">🎙 Voz de ${TEACHER}:</span>${CLAUDE_VOICES.map(([k, n]) => `<button class="chip-btn ${(S.settings.claudeVoice || "buttery") === k ? "" : "ghost"}" data-action="pickKateVoice" data-src="claude" data-v="${k}">${n}</button>`).join("")}</div>`;
+    }
+    const top = voices.filter((v) => voiceScore(v) > 0).slice(0, 4);
+    if (!top.length) return "";
+    const cur = pickVoice(0);
+    return `<div class="vpick"><span class="muted">🎙 Voz de ${TEACHER}:</span>${top.map((v) => `<button class="chip-btn ${cur === v ? "" : "ghost"}" data-action="pickKateVoice" data-src="device" data-v="${esc(v.name)}">${esc(v.name.split(/[ (]/)[0])}${voiceScore(v) >= 90 ? " ⭐" : ""}</button>`).join("")}
+      <button class="link small" data-action="go" data-view="settings">Más voces</button></div>`;
+  }
+  function kateTalk() {
+    const k = ctx.kq;
+    const intro = `<section class="card kate-hero"><div class="teacher-line"><span class="avatar big">👩‍🏫</span><div>
+      <b>${TEACHER} te va a hablar y a hacer preguntas.</b><p class="muted">Ella pregunta en voz alta, tú respondes en inglés y ella te dice si quedó bien, cómo lo diría un nativo y por qué.</p></div></div>${voicePicker()}</section>`;
+    if (!k) {
+      return intro + `<section class="card"><h2>¿Cómo funciona?</h2>
+        <ol class="plan-steps"><li>🔊 ${TEACHER} te hace una pregunta (puedes verla y leer la traducción).</li><li>🗣 Respondes en voz alta y la escribes o la dictas ${micMode() === "yes" ? "con el micrófono" : "con el 🎤 de tu teclado"}.</li><li>✅ Te dice si quedó bien, te da una versión natural y el porqué.</li><li>➡️ Sigue con la próxima pregunta.</li></ol>
+        <button class="btn primary big" data-action="kqStart">▶ Empezar a hablar con ${TEACHER}</button></section>`;
+    }
+    if (k.i >= k.list.length) {
+      const good = k.done.filter((d) => d.ok).length;
+      return intro + `<section class="card"><h2>🎉 ¡Terminaste la ronda!</h2><p>Respondiste <b>${k.done.length}</b> preguntas, <b>${good}</b> muy bien. Las versiones correctas quedaron en tus tarjetas.</p>
+        <button class="btn primary big" data-action="kqStart">🔁 Otra ronda de preguntas</button></section>`;
+    }
+    const q = k.list[k.i]; const r = k.res;
+    return intro + `<section class="card kq">
+      <div class="row between"><span class="muted">Pregunta ${k.i + 1} de ${k.list.length}</span><div class="kq-dots">${k.list.map((_, j) => `<span class="${j < k.i ? "d" : j === k.i ? "n" : ""}"></span>`).join("")}</div></div>
+      <div class="kq-q"><button class="icon big" data-action="kqSay" aria-label="Escuchar la pregunta">🔊</button><div><b>${annotate(q.q)}</b>
+        <details class="tr"><summary>🇪🇸 Ver en español</summary>${esc(q.es)}</details></div></div>
+      ${r ? `<div class="kq-you">🗣 <b>Tú:</b> ${annotate(r.text)}</div>
+        <div class="kq-fb ${r.ok ? "ok" : "mid"}"><b>${r.ok ? "✅ " : "💡 "}${esc(r.title)}</b>${r.reply ? `<div class="kq-reply">👩‍🏫 “${annotate(r.reply)}”</div>` : ""}
+          <div class="kq-better"><button class="icon" data-action="say" data-text="${esc(r.better)}">🔊</button> 🇺🇸 <b>${annotate(r.better)}</b>${r.betterEs ? `<div class="muted">${esc(r.betterEs)}</div>` : ""}</div>
+          <div class="muted kq-why">📐 ${r.why}</div></div>
+        <button class="btn primary big" data-action="kqNext">Siguiente pregunta →</button>`
+      : `<p class="muted">💬 <b>Cómo empezar:</b> <i>${esc(q.help)}</i></p>
+        <form data-form="kqAnswer"><textarea name="t" id="kqInput" rows="2" placeholder="Responde en inglés: escríbelo o díctalo con el 🎤 del teclado">${esc(ctx.kqDraft || "")}</textarea>
+          <div class="row">${micMode() === "yes" ? `<button type="button" class="btn" data-action="kqMic">${ctx.recording === "kq" ? "⏹ Terminar" : "🎙 Hablar"}</button>` : ""}<button class="btn primary">${k.busy ? "Revisando…" : "Responder"}</button>
+          <button type="button" class="link small" data-action="kqHint">No sé qué decir</button></div></form>
+        ${ctx.kqHint ? `<div class="kq-hint">Puedes decir: <button class="icon" data-action="say" data-text="${esc(q.model)}">🔊</button> <b>${esc(q.model)}</b><br><span class="muted">Cámbiala con tus datos y dila en voz alta.</span></div>` : ""}`}
+    </section>`;
+  }
+  async function kqEvaluate(text) {
+    const k = ctx.kq; const q = k.list[k.i];
+    const low = text.toLowerCase(); const n = words(text).length;
+    const keyOk = new RegExp(q.keys, "i").test(low);
+    let res = { text, ok: n >= 3 && keyOk, title: "", better: q.model, betterEs: "", why: q.why, reply: "" };
+    res.title = res.ok ? "¡Muy bien! Respondiste completo." : n < 3 ? "Intenta responder con una frase completa (al menos 3 palabras)." : `Casi. Prueba empezar con: ${q.help}`;
+    if (window.AI.enabled()) {
+      k.busy = true; rerenderKeepScroll();
+      try {
+        const out = await window.AI.explain({ level: currentLevel(), question: `Kate (profesora estadounidense) le preguntó a la estudiante: "${q.q}". La estudiante respondió: "${text}".
+Responde EXACTAMENTE con estas líneas y nada más:
+OK: sí o no (sí si se entiende y es gramaticalmente correcta)
+REPLY: una reacción corta y natural de Kate en inglés de EE. UU., como en una conversación real (máximo 12 palabras, sin hacer otra pregunta)
+BETTER: la respuesta de la estudiante corregida y como la diría un nativo de EE. UU. (mantén su información) | traducción al español
+WHY: explicación en español, muy clara, de 1 o 2 frases: qué cambió y por qué (orden, tiempo verbal, palabra).` });
+        const get = (tag) => ((out.match(new RegExp("^" + tag + ":\\s*(.*)$", "mi")) || [])[1] || "").trim();
+        const ok = /^s[ií]/i.test(get("OK")); const [b, bes] = get("BETTER").split("|").map((x) => (x || "").trim());
+        res = { text, ok, title: ok ? "¡Muy bien!" : "Así queda mejor:", reply: get("REPLY"), better: b || q.model, betterEs: bes || "", why: esc(get("WHY")) || q.why };
+      } catch (err) { toast(err.message); }
+      k.busy = false;
+    }
+    k.res = res; k.done.push({ q: q.q, ok: res.ok });
+    addCard("conv", res.better, res.betterEs || q.es + " (tu respuesta)", "🗣 " + TEACHER + ": " + q.q);
+    record(curUnit().id, "speaking", res.ok); dayLog().speakingWords += n; touchStreak(); save();
+    ctx.kqDraft = ""; ctx.kqHint = false; rerenderKeepScroll();
+    speak((res.reply ? res.reply + " " : res.ok ? "Nice! " : "Good try! ") + (res.ok ? "You can also say: " : "Try saying: ") + res.better);
+  }
+
   function chatSection(chat) {
     if (!window.AI.enabled()) {
       return `<section class="card"><h2>💬 Conversa con ${TEACHER}</h2>
@@ -2228,6 +2302,34 @@ Usa exactamente estas secciones:
       case "writeMode": { ctx.writeMode = ctx.writeMode || {}; ctx.writeMode[el.dataset.id] = el.dataset.on === "1"; stopRec(); ctx.recording = null; rerenderKeepScroll(); break; }
       case "resetChat": ctx.chat.history = []; ctx.chat.ended = false; ctx.chat.summary = null; ctx.chat.stage = 1; ctx.chatBusy = false; render(); break;
       case "pickScen": ctx.chat.si = +el.dataset.i; ctx.chat.history = []; ctx.chat.ended = false; ctx.chat.summary = null; ctx.chat.stage = 1; rerenderKeepScroll(); break;
+      case "kqStart": {
+        const lv = LEVELS.indexOf(currentLevel());
+        const list = shuffle(KQ()).slice(0, lv <= 1 ? 6 : 8);
+        ctx.kq = { i: 0, list, done: [], res: null }; ctx.kqHint = false; render();
+        speak(`Hi ${firstName()}! I'm ${TEACHER}. Let's talk. ${list[0].q}`);
+        break;
+      }
+      case "kqSay": speak(ctx.kq.list[ctx.kq.i].q); break;
+      case "kqHint": ctx.kqHint = true; { const inp = $("#kqInput"); ctx.kqDraft = inp ? inp.value : ""; } rerenderKeepScroll(); break;
+      case "kqNext": {
+        const k = ctx.kq; k.i++; k.res = null;
+        if (k.i >= k.list.length) { const xpBefore = dayXP(S.log[today()]); dayLog().convs = (dayLog().convs || 0) + 1; save(); render(); celebrate({ icon: "🗣", title: "¡Hablaste con " + TEACHER + "!", sub: `${k.done.length} preguntas respondidas en inglés.`, xpBefore }); speak("Great job today! See you next time!"); }
+        else { rerenderKeepScroll(); speak(k.list[k.i].q); }
+        break;
+      }
+      case "kqMic": {
+        const input = $("#kqInput");
+        if (ctx.recording === "kq") { stopRec(); ctx.recording = null; el.textContent = "🎙 Hablar"; break; }
+        stopRec(); ctx.recording = "kq"; el.textContent = "⏹ Terminar";
+        recHandle = startRecognition({ onText: (t) => { input.value = t; }, onEnd: (t) => { ctx.recording = null; el.textContent = "🎙 Hablar"; if (t) input.value = t; } });
+        if (!recHandle) { ctx.recording = null; el.textContent = "🎙 Hablar"; }
+        break;
+      }
+      case "pickKateVoice": {
+        if (el.dataset.src === "claude") { S.settings.voiceSrc = "claude"; S.settings.claudeVoice = el.dataset.v; }
+        else { S.settings.voiceSrc = "device"; S.settings.voice = el.dataset.v; }
+        save(); rerenderKeepScroll(); speak(`Hi ${firstName()}! I'm ${TEACHER}. Do you like my voice?`); break;
+      }
       case "endChat": sendChat("(Wrap up now: the student wants to finish. Close the conversation naturally in character, one or two sentences, then the 🏁 line.)", true); break;
       case "restartChat": ctx.chat.history = []; ctx.chat.ended = false; ctx.chat.summary = null; ctx.chat.stage = 1; sendChat(`(The student is ready. Start the conversation in character with a short, friendly greeting and ONE easy question. Name: ${firstName()}.)`, true); break;
       case "startChat": sendChat(`(The student is ready. Start the conversation in character with a short, friendly greeting and ONE easy question. Name: ${firstName()}.)`, true); break;
@@ -2420,6 +2522,10 @@ Responde EXACTAMENTE con este formato:
         ctx.kb = { es, res }; save();
       } catch (err) { ctx.kb = { es }; toast(err.message); }
       rerenderKeepScroll(); return;
+    }
+    if (kind === "kqAnswer") {
+      const t = (fd.get("t") || "").trim(); if (!t || (ctx.kq && ctx.kq.busy)) return;
+      stopRec(); ctx.recording = null; kqEvaluate(t); return;
     }
     if (kind === "revCheck") {
       const card = dueCards()[0]; const t = (fd.get("t") || "").trim(); if (!card) return;
