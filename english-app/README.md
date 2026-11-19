@@ -67,3 +67,8 @@ Las 64 palabras y frases de A1 tienen una ficha de contexto: cuándo se usa, có
 
 ## 🗣 Kate te pregunta (conversación por voz)
 En la pestaña Hablar, Kate hace preguntas en voz alta sobre tu vida (20 preguntas de A1–A2), tú respondes escribiendo o dictando, y ella te dice si quedó bien, cómo lo diría un nativo de EE. UU. y por qué. Con el profesor IA, Kate reacciona de forma natural y corrige tu respuesta exacta. Puedes elegir la voz de Kate (voces de Claude o del dispositivo). Las versiones correctas se guardan en tus tarjetas.
+
+## 🎮 Aprendizaje multisensorial
+- **Juegos de imágenes y sonidos:** 130 palabras con imagen en 9 temas (comida, animales, casa, ropa, ciudad, clima, personas, emociones, acciones). 4 juegos: Mira y elige, Escucha y toca, Escucha y escribe, Empareja. Las palabras falladas pasan a tus tarjetas con su imagen.
+- **Lecturas cortas ilustradas:** 5 historias (A1–A2) con audio de toda la historia o frase por frase, modo lento, traducción por frase, verbos tocables y preguntas de comprensión.
+- El botón Continuar de Hoy incluye un juego y una lectura cada día.

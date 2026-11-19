@@ -471,3 +471,28 @@ code { background: var(--bg); padding: 0 4px; border-radius: 4px; }
 .kq-better { background: var(--card); border-radius: 10px; padding: 8px 10px; }
 .kq-hint { background: var(--bg); border-radius: 10px; padding: 8px 10px; margin-top: 8px; }
 #kqInput { min-height: 60px; }
+/* Juegos e imágenes */
+.pic-preview { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pic-mini { font-size: 1.8rem; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; width: 52px; height: 52px; cursor: pointer; }
+.game .kq-dots { margin: 8px 0; }
+.g-pic { font-size: 6rem; text-align: center; line-height: 1.2; margin: 10px 0; }
+.g-pic.small-pic { font-size: 4rem; }
+.big-sound { font-size: 1.1rem; padding: 14px 20px; }
+.pic-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.pic-opt { font-size: 3.4rem; background: var(--bg); border: 2px solid var(--line); border-radius: 16px; padding: 10px; cursor: pointer; }
+.pic-opt.right { border-color: var(--good); background: var(--good-soft); }
+.pic-opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.g-fb { border-radius: 12px; padding: 10px; margin: 10px 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.g-fb.ok { background: var(--good-soft); } .g-fb.no { background: var(--bad-soft); }
+.big-pic { font-size: 2rem; }
+.hint-letters { letter-spacing: 2px; }
+.match { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.mcol { display: grid; gap: 6px; }
+.mcard { min-height: 52px; border: 2px solid var(--line); background: var(--bg); color: var(--text); border-radius: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+.mcard.pic { font-size: 2rem; }
+.mcard.sel { border-color: var(--primary); background: var(--primary-soft); }
+.mcard.ok { border-color: var(--good); background: var(--good-soft); opacity: .6; }
+/* Lecturas */
+.reading { display: grid; gap: 6px; margin: 10px 0; }
+.rline { display: grid; grid-template-columns: 34px 1fr; gap: 4px; background: var(--bg); border-radius: 10px; padding: 8px; font-size: 1.05rem; }
+.rline > div { min-width: 0; }

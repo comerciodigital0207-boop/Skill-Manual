@@ -281,7 +281,7 @@
   }
   function dayXP(l) {
     if (!l) return 0;
-    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15 + (l.scenes || 0) * 15 + (l.convs || 0) * 15;
+    return l.steps.length * 20 + (l.reviews || 0) * 2 + Math.min(30, Math.floor((l.speakingWords || 0) / 3)) + (l.listened ? 10 : 0) + (l.drills || 0) * 2 + (l.hw || 0) * 15 + (l.scenes || 0) * 15 + (l.convs || 0) * 15 + (l.games || 0) * 10 + (l.reads || 0) * 15;
   }
   function weekStats(offset = 0) {
     const start = (S.profile && S.profile.created) || today();
@@ -545,6 +545,8 @@
       const sc = SCENES().find((x) => !(S.scenes || {})[x.id] && LEVELS.indexOf(x.level) <= lv + 1) || SCENES()[0];
       if (sc) return { icon: sc.icon, label: `Vida real: ${sc.title}`, why: "Escucha y actúa una situación real en EE. UU. (5 minutos).", view: "speaking", extra: { stab: "real", sceneId: sc.id } };
     }
+    if (!l.games) return { icon: "🎮", label: "Juego: imágenes y sonidos", why: "5 minutos: mira, escucha y escribe palabras nuevas.", view: "guide", extra: { gtab: "games" } };
+    if (!l.reads && LEVELS.indexOf(currentLevel()) <= 2) { const r = (window.READINGS || []).find((x) => !(S.reads || {})[x.id]); if (r) return { icon: r.icon, label: `Lectura: ${r.title}`, why: "Lee y escucha una historia corta, y responde 3 preguntas.", view: "guide", extra: { gtab: "read", reading: r.id } }; }
     if (!finished() && dayXP(l) < DAILY_XP) return { icon: step.icon, label: `Clase: ${u.title} · ${step.name}`, why: "Sigue avanzando hasta tu meta de " + DAILY_XP + " ⚡.", view: "class" };
     return { icon: "🏆", label: "¡Meta cumplida! ¿Una clase más?", why: "Ya cumpliste hoy. Todo lo que hagas extra suma.", view: finished() ? "speaking" : "class" };
   }
@@ -578,6 +580,8 @@
     ["words300", "🧠", "300 palabras", () => Object.keys(S.cards).length >= 300],
     ["mastered25", "💪", "25 palabras dominadas", () => Object.values(S.cards).filter((c) => c.box >= 4).length >= 25],
     ["conv1", "💬", "Primera conversación con " + TEACHER, () => Object.values(S.log).some((l) => l.convs)],
+    ["game1", "🎮", "Primer juego", () => Object.values(S.log).some((l) => l.games)],
+    ["read1", "📖", "Primera lectura", () => Object.keys(S.reads || {}).length >= 1],
     ["scene1", "🇺🇸", "Primera escena real", () => Object.keys(S.scenes || {}).length >= 1],
     ["scenes5", "🗽", "5 escenas reales", () => Object.keys(S.scenes || {}).length >= 5],
     ["scenesAll", "🌎", "Todas las escenas", () => Object.keys(S.scenes || {}).length >= SCENES().length],
@@ -1623,6 +1627,7 @@ WHY: explicación en español, muy clara, de 1 o 2 frases: qué cambió y por qu
       if (prev === "to" && NOUN_AFTER_TO.has(prev2)) return esc(t);
       if (w === "like" && /^(look|looks|looked|feel|feels|sound|sounds|something|just|kinda|is|was)$/.test(prev)) return esc(t);
       if (w === "thanks" || w === "please") return esc(t);
+      if (/^(work|school|home|lunch|dinner|breakfast|night)$/.test(w) && /^(at|from|after|before|for|to)$/.test(prev)) return esc(t);
       if (w === "left" && /^(turn|on|to|keep|go|the|your|my|stay|make|take)$/.test(prev)) return esc(t);
       const m = t.match(/^([^A-Za-z']*)([A-Za-z'’]+)([^A-Za-z']*)$/);
       if (!m) return esc(t);
@@ -1776,7 +1781,7 @@ WHY: explicación en español, muy clara, de 1 o 2 frases: qué cambió y por qu
 
   function viewGuide() {
     const tab = ctx.gtab || "hub";
-    const HUB = [["verbs", "📖", "Verbos", "Más de 130 verbos importantes: sus 5 formas y ejemplos"], ["vocab", "🗂", "Vocabulario por temas", "255 palabras: casa, comida, trabajo, salud, ciudad…"], ["build", "🧱", "Armar oraciones", "El orden de las piezas y ejemplos resueltos"], ["tenses", "⏱", "Tiempos verbales", "Presente, pasado, futuro: afirmativo, negativo y pregunta"], ["conj", "🔧", "Conjugador", "Arma cualquier oración y mira cómo cambia"], ["patterns", "🧩", "Moldes de frases", "I want to…, I'd like to…, because, so…"], ["kate", "🤖", "Arma tu frase con " + TEACHER, "Escribe en español y te lo arma en inglés"]];
+    const HUB = [["games", "🎮", "Juegos: imágenes y sonidos", "Mira, escucha, escribe y empareja 130 palabras"], ["read", "📖", "Lecturas cortas", "Historias ilustradas con audio y preguntas"], ["verbs", "📗", "Verbos", "Más de 130 verbos importantes: sus 5 formas y ejemplos"], ["vocab", "🗂", "Vocabulario por temas", "255 palabras: casa, comida, trabajo, salud, ciudad…"], ["build", "🧱", "Armar oraciones", "El orden de las piezas y ejemplos resueltos"], ["tenses", "⏱", "Tiempos verbales", "Presente, pasado, futuro: afirmativo, negativo y pregunta"], ["conj", "🔧", "Conjugador", "Arma cualquier oración y mira cómo cambia"], ["patterns", "🧩", "Moldes de frases", "I want to…, I'd like to…, because, so…"], ["kate", "🤖", "Arma tu frase con " + TEACHER, "Escribe en español y te lo arma en inglés"]];
     if (tab === "hub") {
       return `<section class="card hero slim"><h1>📚 Aprender</h1><p class="muted">Todo lo que necesitas para entender y armar el inglés. Elige qué estudiar.</p></section>
         <section class="card"><div class="hub">${HUB.map(([k, i, t, d]) => `<button class="hub-tile" data-action="gtab" data-t="${k}"><span class="hub-i">${i}</span><span><b>${esc(t)}</b><small>${esc(d)}</small></span></button>`).join("")}</div></section>
@@ -1784,7 +1789,9 @@ WHY: explicación en español, muy clara, de 1 o 2 frases: qué cambió y por qu
     }
     const cur = HUB.find((h) => h[0] === tab) || HUB[0];
     let body = "";
-    if (tab === "verbs") body = verbsPage();
+    if (tab === "games") body = gamesPage();
+    else if (tab === "read") body = readingPage();
+    else if (tab === "verbs") body = verbsPage();
     else if (tab === "vocab") body = vocabPage();
     else if (tab === "build") {
       body = `<section class="card"><h2>🧱 El orden de una oración en inglés</h2>
@@ -1847,6 +1854,89 @@ WHY: explicación en español, muy clara, de 1 o 2 frases: qué cambió y por qu
     }
     return `<section class="card hero slim"><button class="link" data-action="gtab" data-t="hub">← Aprender</button><h1>${cur[1]} ${esc(cur[2])}</h1><p class="muted">${esc(cur[3])}</p></section>${body}`;
   }
+
+  // ───────────────────────── 🎮 Juegos multisensoriales: imagen · sonido · escritura · emparejar ─────────────────────────
+  const GAMES = [["img", "🖼", "Mira y elige", "Ves la imagen y eliges la palabra en inglés"], ["sound", "👂", "Escucha y toca", "Oyes la palabra y tocas la imagen correcta"], ["spell", "⌨️", "Escucha y escribe", "Oyes la palabra y la escribes (ortografía)"], ["match", "🧩", "Empareja", "Une cada palabra con su imagen"]];
+  function picPool(cat) {
+    const all = window.PICS || []; const seen = new Set();
+    return (cat === "mix" ? all : all.filter((x) => x[3] === cat)).filter((x) => (seen.has(x[0]) ? false : seen.add(x[0])));
+  }
+  function startGame(mode, cat) {
+    const pool = picPool(cat);
+    if (mode === "match") {
+      const items = shuffle(pool).slice(0, 6);
+      ctx.game = { mode, cat, items, right: shuffle(items.map((x) => x[0])), done: [], sel: null, miss: 0, missed: [] };
+    } else {
+      const items = shuffle(pool).slice(0, 8).map((it) => ({ it, opts: shuffle([it, ...shuffle(pool.filter((x) => x[0] !== it[0] && x[2] !== it[2])).slice(0, 3)]) }));
+      ctx.game = { mode, cat, items, i: 0, ok: 0, pick: null, missed: [], typed: "" };
+      if (mode !== "img") setTimeout(() => speak(items[0].it[0]), 150);
+    }
+  }
+  function gamesPage() {
+    const g = ctx.game;
+    if (!g) {
+      const cat = ctx.gcat || "food";
+      return `<section class="card"><h2>¿Por qué jugar?</h2><p>Recuerdas mucho mejor una palabra cuando la <b>ves</b> (imagen), la <b>oyes</b> (sonido), la <b>escribes</b> y la <b>dices</b>. Cada juego entrena un sentido distinto.</p></section>
+        <section class="card"><h2>1. Elige un tema</h2><div class="row">${Object.entries(window.PIC_CATS).map(([k, n]) => `<button class="chip-btn ${cat === k ? "" : "ghost"}" data-action="gcat" data-c="${k}">${n}</button>`).join("")}<button class="chip-btn ${cat === "mix" ? "" : "ghost"}" data-action="gcat" data-c="mix">🎲 Mezcla</button></div>
+          <div class="pic-preview">${picPool(cat).slice(0, 12).map((x) => `<button class="pic-mini" data-action="say" data-text="${esc(x[0])}" title="${esc(x[0])}">${x[2]}</button>`).join("")}</div>
+          <p class="muted small">Toca una imagen para escuchar la palabra.</p></section>
+        <section class="card"><h2>2. Elige el juego</h2><div class="hub">${GAMES.map(([k, i, t, d]) => `<button class="hub-tile" data-action="gameStart" data-m="${k}"><span class="hub-i">${i}</span><span><b>${t}</b><small>${d}</small></span></button>`).join("")}</div></section>`;
+    }
+    const title = GAMES.find((x) => x[0] === g.mode);
+    const head = `<div class="row between"><b>${title[1]} ${title[2]}</b><button class="link small" data-action="gameQuit">Salir</button></div>`;
+    if (g.mode === "match") {
+      const done = g.done.length === g.items.length;
+      return `<section class="card game">${head}<p class="muted">Toca una imagen y luego su palabra. Escucharás cada palabra.</p>
+        <div class="match"><div class="mcol">${g.items.map((x) => `<button class="mcard pic ${g.done.includes(x[0]) ? "ok" : g.sel === x[0] ? "sel" : ""}" data-action="mPick" data-w="${esc(x[0])}" ${g.done.includes(x[0]) ? "disabled" : ""}>${x[2]}</button>`).join("")}</div>
+        <div class="mcol">${g.right.map((w) => `<button class="mcard ${g.done.includes(w) ? "ok" : ""}" data-action="mWord" data-w="${esc(w)}" ${g.done.includes(w) ? "disabled" : ""}>${esc(w)}</button>`).join("")}</div></div>
+        ${done ? `<div class="tq done"><b>🧩 ¡Completo! Errores: ${g.miss}</b></div><button class="btn primary big" data-action="gameEnd">Terminar</button>` : ""}</section>`;
+    }
+    if (g.i >= g.items.length) return `<section class="card game">${head}<div class="tq done"><b>Resultado: ${g.ok} de ${g.items.length}</b></div><button class="btn primary big" data-action="gameEnd">Terminar</button></section>`;
+    const { it, opts } = g.items[g.i];
+    const fb = g.pick ? `<div class="g-fb ${g.pickOk ? "ok" : "no"}">${g.pickOk ? "✅ ¡Correcto!" : "❌ Era:"} <span class="big-pic">${it[2]}</span> <b>${esc(it[0])}</b> = ${esc(it[1])} <button class="icon" data-action="say" data-text="${esc(it[0])}">🔊</button></div>
+      <button class="btn primary big" data-action="gNext">${g.i + 1 < g.items.length ? "Siguiente →" : "Ver resultado"}</button>` : "";
+    let body = "";
+    if (g.mode === "img") body = `<div class="g-pic">${it[2]}</div><p class="center muted">¿Cómo se dice en inglés?</p>
+      <div class="options">${opts.map((o) => `<button class="opt ${g.pick ? (o[0] === it[0] ? "right" : o[0] === g.pick ? "wrong" : "") : ""}" ${g.pick ? "disabled" : ""} data-action="gAns" data-v="${esc(o[0])}">${esc(o[0])}</button>`).join("")}</div>`;
+    else if (g.mode === "sound") body = `<div class="center"><button class="btn big-sound" data-action="say" data-text="${esc(it[0])}">🔊 Escuchar otra vez</button></div><p class="center muted">Toca la imagen de la palabra que oíste</p>
+      <div class="pic-opts">${opts.map((o) => `<button class="pic-opt ${g.pick ? (o[0] === it[0] ? "right" : o[0] === g.pick ? "wrong" : "") : ""}" ${g.pick ? "disabled" : ""} data-action="gAns" data-v="${esc(o[0])}">${o[2]}</button>`).join("")}</div>`;
+    else body = `<div class="g-pic small-pic">${it[2]}</div><div class="center"><button class="btn" data-action="say" data-text="${esc(it[0])}">🔊 Escuchar</button> <button class="btn" data-action="saySlow" data-text="${esc(it[0])}">🐢 Lento</button></div>
+      <p class="center muted">Escribe la palabra en inglés (${it[0].length} letras): <b class="hint-letters">${it[0].split("").map((c) => (c === " " ? "&nbsp;&nbsp;" : "_")).join(" ")}</b></p>
+      ${g.pick ? "" : `<form data-form="gSpell" class="row"><input name="t" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Escribe aquí"><button class="btn primary">Comprobar</button></form>`}`;
+    return `<section class="card game">${head}<div class="kq-dots">${g.items.map((_, j) => `<span class="${j < g.i ? "d" : j === g.i ? "n" : ""}"></span>`).join("")}</div>${body}${fb}</section>`;
+  }
+  function gameAnswer(ok, picked) {
+    const g = ctx.game; const it = g.items[g.i].it;
+    g.pick = picked || "x"; g.pickOk = ok; if (ok) g.ok++; else g.missed.push(it);
+    record(curUnit().id, "vocab", ok); speak(it[0]); save(); rerenderKeepScroll();
+  }
+  function endGame() {
+    const g = ctx.game; const xpBefore = dayXP(S.log[today()]);
+    g.missed.forEach((x) => addCard("topic", x[0], x[2] + " " + x[1], "🎮 " + window.PIC_CATS[x[3]]));
+    const total = g.items.length; const ok = g.mode === "match" ? Math.max(0, total - g.miss) : g.ok;
+    const lg = dayLog(); lg.games = (lg.games || 0) + 1; touchStreak(); save();
+    ctx.game = null; render();
+    celebrate({ icon: "🎮", title: "¡Juego terminado!", sub: `${ok} de ${total} a la primera.${g.missed.length ? " Las que fallaste quedaron en tus tarjetas, con su imagen." : ""}`, xpBefore, closeLabel: "Jugar otro" });
+  }
+  // ───────────────────────── 📖 Lecturas cortas ilustradas ─────────────────────────
+  function readingPage() {
+    const R = window.READINGS || [];
+    if (!ctx.reading) {
+      return `<section class="card"><p>Leer y escuchar al mismo tiempo une la palabra escrita con su sonido. Lee cada historia mientras la escuchas, toca los verbos para entenderlos y responde las preguntas.</p>
+        <div class="hub">${R.map((r) => `<button class="hub-tile" data-action="openRead" data-id="${r.id}"><span class="hub-i">${r.icon}</span><span><b>${esc(r.title)}</b><small>${esc(r.es)} · ${r.level} · ${esc(r.focus)}${(S.reads || {})[r.id] ? " · ✅" : ""}</small></span></button>`).join("")}</div></section>`;
+    }
+    const r = R.find((x) => x.id === ctx.reading); const st = (ctx.rd = ctx.rd && ctx.rd.id === r.id ? ctx.rd : { id: r.id, es: false, open: {}, quiz: {} });
+    const answered = Object.keys(st.quiz).length;
+    return `<section class="card"><button class="link" data-action="readBack">← Todas las lecturas</button>
+      <h2>${r.icon} ${esc(r.title)} <span class="muted">(${esc(r.es)})</span></h2><p class="muted">Nivel ${r.level} · Practicas: <b>${esc(r.focus)}</b></p>
+      <div class="row"><button class="btn primary" data-action="readAll">▶ Escuchar toda la historia</button><button class="btn" data-action="readSlow">🐢 Lento</button><button class="btn small" data-action="readEs">${st.es ? "Ocultar traducción" : "🇪🇸 Ver traducción"}</button></div>
+      <div class="reading">${r.lines.map(([en, es], i) => `<div class="rline"><button class="icon" data-action="say" data-text="${esc(en)}" aria-label="Escuchar">🔊</button><div><span>${annotate(en)}</span>${st.es || st.open[i] ? `<div class="muted">${esc(es)}</div>` : `<button class="link small" data-action="readLine" data-i="${i}">¿qué significa?</button>`}</div></div>`).join("")}</div>
+      <p class="muted small">Toca los <span class="vw demo">verbos subrayados</span> para ver su forma y por qué van así.</p></section>
+      <section class="card"><h2>¿Entendiste?</h2>
+      ${r.quiz.map(([q, opts, a], qi) => { const pk = st.quiz[qi]; return `<div class="qblock"><div class="q">${qi + 1}. ${annotate(q)}</div><div class="options">${opts.map((o, oi) => `<button class="opt ${pk != null ? (oi === a ? "right" : oi === pk ? "wrong" : "") : ""}" ${pk != null ? "disabled" : ""} data-action="readQ" data-q="${qi}" data-o="${oi}">${esc(o)}</button>`).join("")}</div></div>`; }).join("")}
+      ${answered === r.quiz.length ? `<button class="btn primary big" data-action="readDone">Terminar lectura ✔</button>` : ""}</section>`;
+  }
+
   // 📖 Verbos: lista, búsqueda y ficha con las 5 formas + ejemplos en todos los tiempos
   function verbsPage() {
     if (ctx.verb) {
@@ -2047,6 +2137,31 @@ WHY: explicación en español, muy clara, de 1 o 2 frases: qué cambió y por qu
         Object.assign(S.settings, old); break;
       }
       case "gtab": ctx.gtab = el.dataset.t === "hub" ? null : el.dataset.t; ctx.verb = null; ctx.topic = null; render(); window.scrollTo(0, 0); break;
+      case "gcat": ctx.gcat = el.dataset.c; rerenderKeepScroll(); break;
+      case "gameStart": startGame(el.dataset.m, ctx.gcat || "food"); render(); window.scrollTo(0, 0); break;
+      case "gameQuit": ctx.game = null; render(); break;
+      case "gAns": { const g = ctx.game; if (g.pick) break; gameAnswer(el.dataset.v === g.items[g.i].it[0], el.dataset.v); break; }
+      case "gNext": { const g = ctx.game; g.i++; g.pick = null; rerenderKeepScroll(); if (g.i < g.items.length && g.mode !== "img") speak(g.items[g.i].it[0]); break; }
+      case "gameEnd": endGame(); break;
+      case "mPick": { const g = ctx.game; g.sel = el.dataset.w; const it = g.items.find((x) => x[0] === g.sel); speak(it[0]); rerenderKeepScroll(); break; }
+      case "mWord": {
+        const g = ctx.game; if (!g.sel) { toast("Primero toca una imagen"); speak(el.dataset.w); break; }
+        if (g.sel === el.dataset.w) { g.done.push(g.sel); speak(g.sel); record(curUnit().id, "vocab", true); }
+        else { g.miss++; const it = g.items.find((x) => x[0] === g.sel); if (!g.missed.includes(it)) g.missed.push(it); toast("❌ No. Escucha: " + g.sel); speak(g.sel); }
+        g.sel = null; rerenderKeepScroll(); break;
+      }
+      case "openRead": ctx.reading = el.dataset.id; ctx.rd = null; render(); window.scrollTo(0, 0); break;
+      case "readBack": ctx.reading = null; render(); break;
+      case "readEs": ctx.rd.es = !ctx.rd.es; rerenderKeepScroll(); break;
+      case "readLine": ctx.rd.open[el.dataset.i] = true; rerenderKeepScroll(); break;
+      case "readAll": case "readSlow": { const r = window.READINGS.find((x) => x.id === ctx.reading); if (a === "readSlow") { const old = S.settings.rate; S.settings.rate = 0.7; speakLines(r.lines.map(([en]) => ({ text: en, voice: 0 }))); S.settings.rate = old; } else speakLines(r.lines.map(([en]) => ({ text: en, voice: 0 }))); const lg = dayLog(); if (!lg.listened) { lg.listened = true; save(); } break; }
+      case "readQ": { const r = window.READINGS.find((x) => x.id === ctx.reading); const qi = +el.dataset.q; if (ctx.rd.quiz[qi] != null) break; ctx.rd.quiz[qi] = +el.dataset.o; record(curUnit().id, "listening", +el.dataset.o === r.quiz[qi][2]); save(); rerenderKeepScroll(); break; }
+      case "readDone": {
+        const r = window.READINGS.find((x) => x.id === ctx.reading); const ok = r.quiz.filter(([, , a], qi) => ctx.rd.quiz[qi] === a).length;
+        const xpBefore = dayXP(S.log[today()]); S.reads = S.reads || {}; S.reads[r.id] = { date: today(), score: ok };
+        const lg = dayLog(); lg.reads = (lg.reads || 0) + 1; touchStreak(); save(); ctx.reading = null; render();
+        celebrate({ icon: r.icon, title: "¡Lectura terminada!", sub: `${r.title}: ${ok} de ${r.quiz.length} preguntas bien.`, xpBefore, closeLabel: "Leer otra" }); break;
+      }
       case "verbInfo": showVerbSheet({ w: el.dataset.w, p: el.dataset.p, p2: el.dataset.p2, n: el.dataset.n, first: el.dataset.first, past: el.dataset.past }); break;
       case "vsClose": $("#vsheet").hidden = true; break;
       case "openVerb": $("#vsheet").hidden = true; stopRec(); go("guide", { gtab: "verbs", verb: el.dataset.v }); break;
@@ -2522,6 +2637,10 @@ Responde EXACTAMENTE con este formato:
         ctx.kb = { es, res }; save();
       } catch (err) { ctx.kb = { es }; toast(err.message); }
       rerenderKeepScroll(); return;
+    }
+    if (kind === "gSpell") {
+      const g = ctx.game; const it = g.items[g.i].it; const t = (fd.get("t") || "").trim().toLowerCase().replace(/^(a|an|the)\s+/, "");
+      if (!t) return; gameAnswer(t === it[0].toLowerCase(), t); return;
     }
     if (kind === "kqAnswer") {
       const t = (fd.get("t") || "").trim(); if (!t || (ctx.kq && ctx.kq.busy)) return;
